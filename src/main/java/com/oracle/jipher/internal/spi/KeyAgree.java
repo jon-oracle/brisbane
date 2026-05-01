@@ -136,6 +136,13 @@ public abstract class KeyAgree extends KeyAgreementSpi {
      */
     abstract SecretKey createTlsPremasterSecretKey(byte[] secret);
 
+    /**
+     * Creates a Generic Key from secret key material
+     * @param secret the secret key material to use
+     * @return a {@link SecretKey} suitable for use by the JSSE
+     */
+    abstract SecretKey createGenericSecretKey(byte[] secret);
+
     @Override
     protected void engineInit(Key key, AlgorithmParameterSpec algorithmParameterSpec, SecureRandom secureRandom)
             throws InvalidKeyException, InvalidAlgorithmParameterException {
@@ -250,6 +257,8 @@ public abstract class KeyAgree extends KeyAgreementSpi {
                 return TripleDesUtil.createKey(this.state.secret);
             } else if (alg.equals("TlsPremasterSecret")) {
                 return createTlsPremasterSecretKey(this.state.secret);
+            } else if (alg.equals("Generic")) {
+                return createGenericSecretKey(this.state.secret);
             } else {
                 throw new NoSuchAlgorithmException("Unsupported secret key algorithm: " + alg);
             }
@@ -308,6 +317,11 @@ public abstract class KeyAgree extends KeyAgreementSpi {
         SecretKey createTlsPremasterSecretKey(byte[] secret) {
             return new SecretKeySpec(secret, "TlsPremasterSecret");
         }
+
+        @Override
+        SecretKey createGenericSecretKey(byte[] secret) {
+            return new SecretKeySpec(secret, "Generic");
+        }
     }
 
     /**
@@ -354,6 +368,11 @@ public abstract class KeyAgree extends KeyAgreementSpi {
             } else {
                 return new SecretKeySpec(secret, "TlsPremasterSecret");
             }
+        }
+
+        @Override
+        SecretKey createGenericSecretKey(byte[] secret) {
+            return new SecretKeySpec(secret, "Generic");
         }
 
         boolean paramsEquals(DHParameterSpec spec1, DHParameterSpec spec2) {

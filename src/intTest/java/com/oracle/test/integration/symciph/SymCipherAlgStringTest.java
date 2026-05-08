@@ -114,7 +114,7 @@ public class SymCipherAlgStringTest {
                         "AES_128/KW/NoPadding", new String[]{"AESWrap_128", "OID.2.16.840.1.101.3.4.1.5", "2.16.840.1.101.3.4.1.5"}
                 },
                 new Object[]{
-                        "AES_192/KW/NoPadding", new String[]{"AESWrap_192", "OID. 2.16.840.1.101.3.4.1.25", "2.16.840.1.101.3.4.1.25"}
+                        "AES_192/KW/NoPadding", new String[]{"AESWrap_192", "OID.2.16.840.1.101.3.4.1.25", "2.16.840.1.101.3.4.1.25"}
                 },
                 new Object[]{
                         "AES_256/KW/NoPadding", new String[]{"AESWrap_256", "OID.2.16.840.1.101.3.4.1.45", "2.16.840.1.101.3.4.1.45"}

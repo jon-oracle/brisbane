@@ -102,15 +102,27 @@ public class KeyPairGenNegativeTest {
         kpRsa.generateKeyPair();
     }
 
-    @Test(expected = ProviderException.class)
+    @Test(expected = InvalidAlgorithmParameterException.class)
+    public void initRsaPubExpNegative() throws Exception {
+        kpRsa.initialize(new RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4.negate()));
+    }
+
+    @Test(expected = InvalidAlgorithmParameterException.class)
     public void initRsaPubExpEven() throws Exception {
-        kpRsa.initialize(new RSAKeyGenParameterSpec(2048, BigInteger.valueOf(8)));
+        kpRsa.initialize(new RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4.add(BigInteger.ONE)));
         kpRsa.generateKeyPair();
     }
 
     @Test(expected = InvalidAlgorithmParameterException.class)
-    public void initRsaPubExpNegative() throws Exception {
-        kpRsa.initialize(new RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4.negate()));
+    public void initRsaPubExpOddBelowPermittedRange() throws Exception { // Odd value outside range 2^16 < e < 2^256
+        kpRsa.initialize(new RSAKeyGenParameterSpec(2048, BigInteger.valueOf(2).pow(16).subtract(BigInteger.ONE)));
+        kpRsa.generateKeyPair();
+    }
+
+    @Test(expected = InvalidAlgorithmParameterException.class)
+    public void initRsaPubExpOddAbovePermittedRange() throws Exception { // Odd value outside range 2^16 < e < 2^256
+        kpRsa.initialize(new RSAKeyGenParameterSpec(2048, BigInteger.valueOf(2).pow(256).add(BigInteger.ONE)));
+        kpRsa.generateKeyPair();
     }
 
     @Test(expected = InvalidAlgorithmParameterException.class)

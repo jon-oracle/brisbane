@@ -188,16 +188,22 @@ public abstract class KeyPairGen extends KeyPairGenerator {
                 throw new InvalidAlgorithmParameterException("invalid key size");
             }
             if (kgParams.getPublicExponent() != null) {
-                if (kgParams.getPublicExponent().signum() <= 0) {
-                    throw new InvalidAlgorithmParameterException("Parameter spec must not contain zero, or negative values");
+                BigInteger publicExponent = kgParams.getPublicExponent();
+
+                // FIPS 186-5 The exponent e shall be an odd positive integer such that 2^16 < e < 2^256
+                // Note: 2^16 is even so we don't need to worry about 2^16 having 17 bits.
+                if (publicExponent.signum() <= 0 || !publicExponent.testBit(0) ||
+                        publicExponent.bitLength() <= 16 || publicExponent.bitLength() >= 257) {
+                    throw new InvalidAlgorithmParameterException("Public exponent e must be an odd positive integer such that 2^16 < e < 2^256");
                 }
+
                 // If OpenSSL is directed to generate an RSA key pair using a modules with more than
                 // OPENSSL_RSA_SMALL_MODULUS_BITS and a public exponent with more than
                 // OPENSSL_RSA_MAX_PUBEXP_BITS it will fail the pair-wise consistency test resulting in the
                 // FIPS module entering an error state. We want to avoid this because the only way to clear
                 // the FIPS module error state is to unload and reload the FIPS module.
                 if (kgParams.getKeysize() > EVP_PKEY.RSA_SMALL_MODULUS_BITS &&
-                        kgParams.getPublicExponent().bitLength() > EVP_PKEY.RSA_MAX_PUBEXP_BITS) {
+                        publicExponent.bitLength() > EVP_PKEY.RSA_MAX_PUBEXP_BITS) {
                     throw new InvalidAlgorithmParameterException(String.format(
                             "Generating an RSA key with a length of more than %d bits and a public key exponent " +
                             "of more than %d bits is not supported.",

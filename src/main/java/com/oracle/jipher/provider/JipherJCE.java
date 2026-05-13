@@ -352,7 +352,7 @@ public final class JipherJCE extends Provider {
         putService("AlgorithmParameters", "DH", DhParameters.class.getName(), "DiffieHellman",
                 "OID.1.2.840.113549.1.3.1", "1.2.840.113549.1.3.1");
         putService("AlgorithmParameters", "PBES2", Pbes2Parameters.PBES2.class.getName(),
-                "OID.1.2.840.113549.1.5.13", " 1.2.840.113549.1.5.13");
+                "OID.1.2.840.113549.1.5.13", "1.2.840.113549.1.5.13");
         putService("AlgorithmParameters", "PBEWithHmacSHA1AndAES_128", Pbes2Parameters.PBEWithHmacSHA1AndAES128.class.getName());
         putService("AlgorithmParameters", "PBEWithHmacSHA224AndAES_128", Pbes2Parameters.PBEWithHmacSHA224AndAES128.class.getName());
         putService("AlgorithmParameters", "PBEWithHmacSHA256AndAES_128", Pbes2Parameters.PBEWithHmacSHA256AndAES128.class.getName());
@@ -404,7 +404,7 @@ public final class JipherJCE extends Provider {
         putService("Cipher", "AES_128/KW/NoPadding", WrapCipher.AesWrap128.class.getName(), "AESWrap_128",
                 "OID.2.16.840.1.101.3.4.1.5", "2.16.840.1.101.3.4.1.5");
         putService("Cipher", "AES_192/KW/NoPadding", WrapCipher.AesWrap192.class.getName(), "AESWrap_192",
-                "OID. 2.16.840.1.101.3.4.1.25", "2.16.840.1.101.3.4.1.25");
+                "OID.2.16.840.1.101.3.4.1.25", "2.16.840.1.101.3.4.1.25");
         putService("Cipher", "AES_256/KW/NoPadding", WrapCipher.AesWrap256.class.getName(), "AESWrap_256",
                 "OID.2.16.840.1.101.3.4.1.45", "2.16.840.1.101.3.4.1.45");
         putService("Cipher", "AES/KWP/NoPadding", WrapCipher.AesWrapPad.class.getName(),

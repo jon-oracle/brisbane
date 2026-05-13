@@ -93,7 +93,7 @@ public class AlgParametersAlgStringTest {
                 },
                 new Object[]{
                         "PBES2", new String[]{
-                        "OID.1.2.840.113549.1.5.13", " 1.2.840.113549.1.5.13"}
+                        "OID.1.2.840.113549.1.5.13", "1.2.840.113549.1.5.13"}
                 },
                 new Object[]{
                         "RSASSA-PSS", new String[]{

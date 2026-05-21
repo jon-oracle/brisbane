@@ -106,8 +106,14 @@ public class OpenSslTest {
 
     @Test
     public void versionBuildMetadataString() {
-        // OPENSSL_version_build_metadata() will return an empty string unless OpenSSL is built with a different build metadata string.
-        assertEquals("", openSsl.versionBuildMetadataString());
+        // OPENSSL_version_build_metadata() will return an empty string unless OpenSSL
+        // was built with custom version build metadata. Because the value depends on the
+        // build configuration, only verify it when an expected value is provided.
+        String actual = openSsl.versionBuildMetadataString();
+        String expected = System.getProperty("jipher.test.openssl.versionBuildMetadataString");
+        if (expected != null) {
+            assertEquals(expected, actual);
+        }
     }
 
     @Test

@@ -42,6 +42,5 @@ module com.oracle.jipher {
     provides java.security.Provider with com.oracle.jipher.provider.JipherJCE;
 
     exports com.oracle.jipher.provider;
-    exports com.oracle.jipher.internal.spi to java.base;
 }
 

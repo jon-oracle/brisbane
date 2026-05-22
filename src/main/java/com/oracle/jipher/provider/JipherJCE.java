@@ -209,8 +209,8 @@ public final class JipherJCE extends Provider {
      *         wrapped as the cause
      */
     private static String checkOpenSSLIsAvailableThenCallInfo() {
-        if (!isAvailable()) {
-            throw new ProviderException("OpenSSL is not available", loadingException());
+        if (!OpenSslValidator.isAvailable()) {
+            throw new ProviderException("OpenSSL is not available", OpenSslValidator.loadingException());
         }
         return info(true);
     }
@@ -284,24 +284,6 @@ public final class JipherJCE extends Provider {
         } catch (ParseException e) {
             return 0;
         }
-    }
-
-    /**
-     * Checks whether the underlying OpenSSL native library is available.
-     *
-     * @return {@code true} if OpenSSL can be loaded and used, {@code false} otherwise
-     */
-    public static boolean isAvailable() {
-        return OpenSslValidator.isAvailable();
-    }
-
-    /**
-     * Retrieves the exception that occurred while attempting to load OpenSSL.
-     *
-     * @return a {@link ProviderException} describing the failure, or {@code null} if no error occurred
-     */
-    public static ProviderException loadingException() {
-        return OpenSslValidator.loadingException();
     }
 
     /**

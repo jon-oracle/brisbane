@@ -41,13 +41,17 @@
 package com.oracle.jipher.provider;
 
 import java.io.Serial;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidParameterException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.ProviderException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import javax.crypto.KDFParameters;
+import javax.crypto.NoSuchPaddingException;
 
 import com.oracle.jipher.internal.common.Debug;
 import com.oracle.jipher.internal.common.ToolkitProperties;
@@ -73,6 +77,7 @@ import com.oracle.jipher.internal.spi.EcParameters;
 import com.oracle.jipher.internal.spi.EcdsaDigestSig;
 import com.oracle.jipher.internal.spi.FeedbackCipher;
 import com.oracle.jipher.internal.spi.GcmParameters;
+import com.oracle.jipher.internal.spi.Hkdf;
 import com.oracle.jipher.internal.spi.Hmac;
 import com.oracle.jipher.internal.spi.HmacKeyGenerator;
 import com.oracle.jipher.internal.spi.KeyAgree;
@@ -324,9 +329,11 @@ public final class JipherJCE extends Provider {
     private void addServices() {
 
         // AlgorithmParameters Implementations
-        putService("AlgorithmParameters", "EC", EcParameters.class.getName(),
+        putService("AlgorithmParameters", "EC",
+                EcParameters.class.getName(), EcParameters::new,
                 "OID.1.2.840.10045.2.1", "1.2.840.10045.2.1");
-        putService("AlgorithmParameters", "AES", CipherParameters.AesParameters.class.getName(),
+        putService("AlgorithmParameters", "AES",
+                CipherParameters.AesParameters.class.getName(), CipherParameters.AesParameters::new,
                 "OID.2.16.840.1.101.3.4.1", "2.16.840.1.101.3.4.1",
                 "OID.2.16.840.1.101.3.4.1.2", "2.16.840.1.101.3.4.1.2",
                 "OID.2.16.840.1.101.3.4.1.3", "2.16.840.1.101.3.4.1.3",
@@ -341,359 +348,559 @@ public final class JipherJCE extends Provider {
                 "OID.2.16.840.1.101.3.4.1.44", "2.16.840.1.101.3.4.1.44",
                 "OID.2.16.840.1.101.3.4.1.46", "2.16.840.1.101.3.4.1.46");
         if (isDESEDESupported()) {
-            putService("AlgorithmParameters", "DESede", CipherParameters.DESedeParameters.class.getName(),
+            putService("AlgorithmParameters", "DESede",
+                    CipherParameters.DESedeParameters.class.getName(), CipherParameters.DESedeParameters::new,
                     "OID.1.2.840.113549.3.7", "1.2.840.113549.3.7");
         }
-        putService("AlgorithmParameters", "GCM", GcmParameters.class.getName());
-        putService("AlgorithmParameters", "OAEP", OaepParameters.class.getName(),
+        putService("AlgorithmParameters", "GCM",
+                GcmParameters.class.getName(), GcmParameters::new);
+        putService("AlgorithmParameters", "OAEP",
+                OaepParameters.class.getName(), OaepParameters::new,
                 "OID.1.2.840.113549.1.1.7", "1.2.840.113549.1.1.7");
-        putService("AlgorithmParameters", "RSASSA-PSS", PssParameters.class.getName(),
+        putService("AlgorithmParameters", "RSASSA-PSS",
+                PssParameters.class.getName(), PssParameters::new,
                 "OID.1.2.840.113549.1.1.10", "1.2.840.113549.1.1.10");
-        putService("AlgorithmParameters", "DH", DhParameters.class.getName(), "DiffieHellman",
+        putService("AlgorithmParameters", "DH",
+                DhParameters.class.getName(), DhParameters::new, "DiffieHellman",
                 "OID.1.2.840.113549.1.3.1", "1.2.840.113549.1.3.1");
-        putService("AlgorithmParameters", "PBES2", Pbes2Parameters.PBES2.class.getName(),
+        putService("AlgorithmParameters", "PBES2",
+                Pbes2Parameters.PBES2.class.getName(), Pbes2Parameters.PBES2::new,
                 "OID.1.2.840.113549.1.5.13", "1.2.840.113549.1.5.13");
-        putService("AlgorithmParameters", "PBEWithHmacSHA1AndAES_128", Pbes2Parameters.PBEWithHmacSHA1AndAES128.class.getName());
-        putService("AlgorithmParameters", "PBEWithHmacSHA224AndAES_128", Pbes2Parameters.PBEWithHmacSHA224AndAES128.class.getName());
-        putService("AlgorithmParameters", "PBEWithHmacSHA256AndAES_128", Pbes2Parameters.PBEWithHmacSHA256AndAES128.class.getName());
-        putService("AlgorithmParameters", "PBEWithHmacSHA384AndAES_128", Pbes2Parameters.PBEWithHmacSHA384AndAES128.class.getName());
-        putService("AlgorithmParameters", "PBEWithHmacSHA512AndAES_128", Pbes2Parameters.PBEWithHmacSHA512AndAES128.class.getName());
-        putService("AlgorithmParameters", "PBEWithHmacSHA1AndAES_256", Pbes2Parameters.PBEWithHmacSHA1AndAES256.class.getName());
-        putService("AlgorithmParameters", "PBEWithHmacSHA224AndAES_256", Pbes2Parameters.PBEWithHmacSHA224AndAES256.class.getName());
-        putService("AlgorithmParameters", "PBEWithHmacSHA256AndAES_256", Pbes2Parameters.PBEWithHmacSHA256AndAES256.class.getName());
-        putService("AlgorithmParameters", "PBEWithHmacSHA384AndAES_256", Pbes2Parameters.PBEWithHmacSHA384AndAES256.class.getName());
-        putService("AlgorithmParameters", "PBEWithHmacSHA512AndAES_256", Pbes2Parameters.PBEWithHmacSHA512AndAES256.class.getName());
-        putService("AlgorithmParameters", "PBE", PbeParameters.class.getName());
+        putService("AlgorithmParameters", "PBEWithHmacSHA1AndAES_128",
+                Pbes2Parameters.PBEWithHmacSHA1AndAES128.class.getName(), Pbes2Parameters.PBEWithHmacSHA1AndAES128::new);
+        putService("AlgorithmParameters", "PBEWithHmacSHA224AndAES_128",
+                Pbes2Parameters.PBEWithHmacSHA224AndAES128.class.getName(), Pbes2Parameters.PBEWithHmacSHA224AndAES128::new);
+        putService("AlgorithmParameters", "PBEWithHmacSHA256AndAES_128",
+                Pbes2Parameters.PBEWithHmacSHA256AndAES128.class.getName(), Pbes2Parameters.PBEWithHmacSHA256AndAES128::new);
+        putService("AlgorithmParameters", "PBEWithHmacSHA384AndAES_128",
+                Pbes2Parameters.PBEWithHmacSHA384AndAES128.class.getName(), Pbes2Parameters.PBEWithHmacSHA384AndAES128::new);
+        putService("AlgorithmParameters", "PBEWithHmacSHA512AndAES_128",
+                Pbes2Parameters.PBEWithHmacSHA512AndAES128.class.getName(), Pbes2Parameters.PBEWithHmacSHA512AndAES128::new);
+        putService("AlgorithmParameters", "PBEWithHmacSHA1AndAES_256",
+                Pbes2Parameters.PBEWithHmacSHA1AndAES256.class.getName(), Pbes2Parameters.PBEWithHmacSHA1AndAES256::new);
+        putService("AlgorithmParameters", "PBEWithHmacSHA224AndAES_256",
+                Pbes2Parameters.PBEWithHmacSHA224AndAES256.class.getName(), Pbes2Parameters.PBEWithHmacSHA224AndAES256::new);
+        putService("AlgorithmParameters", "PBEWithHmacSHA256AndAES_256",
+                Pbes2Parameters.PBEWithHmacSHA256AndAES256.class.getName(), Pbes2Parameters.PBEWithHmacSHA256AndAES256::new);
+        putService("AlgorithmParameters", "PBEWithHmacSHA384AndAES_256",
+                Pbes2Parameters.PBEWithHmacSHA384AndAES256.class.getName(), Pbes2Parameters.PBEWithHmacSHA384AndAES256::new);
+        putService("AlgorithmParameters", "PBEWithHmacSHA512AndAES_256",
+                Pbes2Parameters.PBEWithHmacSHA512AndAES256.class.getName(), Pbes2Parameters.PBEWithHmacSHA512AndAES256::new);
+        putService("AlgorithmParameters", "PBE",
+                PbeParameters.class.getName(), PbeParameters::new);
 
         // Cipher implementations
-        putService("Cipher", "AES", FeedbackCipher.AES.class.getName(), "Rijndael",
+        putService("Cipher", "AES",
+                FeedbackCipher.AES.class.getName(), FeedbackCipher.AES::new, "Rijndael",
                 "OID.2.16.840.1.101.3.4.1", "2.16.840.1.101.3.4.1");
-        putService("Cipher", "AES/GCM/NoPadding", AeadCipher.AesGcm.class.getName());
-        putService("Cipher", "AES_128/ECB/NoPadding", FeedbackCipher.Aes128EcbNoPad.class.getName(),
+        putService("Cipher", "AES/GCM/NoPadding",
+                AeadCipher.AesGcm.class.getName(), AeadCipher.AesGcm::new);
+        putService("Cipher", "AES_128/ECB/NoPadding",
+                FeedbackCipher.Aes128EcbNoPad.class.getName(), FeedbackCipher.Aes128EcbNoPad::new,
                 "OID.2.16.840.1.101.3.4.1.1", "2.16.840.1.101.3.4.1.1");
-        putService("Cipher", "AES_192/ECB/NoPadding", FeedbackCipher.Aes192EcbNoPad.class.getName(),
+        putService("Cipher", "AES_192/ECB/NoPadding",
+                FeedbackCipher.Aes192EcbNoPad.class.getName(), FeedbackCipher.Aes192EcbNoPad::new,
                 "OID.2.16.840.1.101.3.4.1.21", "2.16.840.1.101.3.4.1.21");
-        putService("Cipher", "AES_256/ECB/NoPadding", FeedbackCipher.Aes256EcbNoPad.class.getName(),
+        putService("Cipher", "AES_256/ECB/NoPadding",
+                FeedbackCipher.Aes256EcbNoPad.class.getName(), FeedbackCipher.Aes256EcbNoPad::new,
                 "OID.2.16.840.1.101.3.4.1.41", "2.16.840.1.101.3.4.1.41");
-        putService("Cipher", "AES_128/CBC/PKCS5Padding", FeedbackCipher.Aes128CbcPkcs5Pad.class.getName(),
+        putService("Cipher", "AES_128/CBC/PKCS5Padding",
+                FeedbackCipher.Aes128CbcPkcs5Pad.class.getName(), FeedbackCipher.Aes128CbcPkcs5Pad::new,
                 "AES_128/CBC/PKCS7Padding", "OID.2.16.840.1.101.3.4.1.2", "2.16.840.1.101.3.4.1.2");
-        putService("Cipher", "AES_192/CBC/PKCS5Padding", FeedbackCipher.Aes192CbcPkcs5Pad.class.getName(),
+        putService("Cipher", "AES_192/CBC/PKCS5Padding",
+                FeedbackCipher.Aes192CbcPkcs5Pad.class.getName(), FeedbackCipher.Aes192CbcPkcs5Pad::new,
                 "AES_192/CBC/PKCS7Padding", "OID.2.16.840.1.101.3.4.1.22", "2.16.840.1.101.3.4.1.22");
-        putService("Cipher", "AES_256/CBC/PKCS5Padding", FeedbackCipher.Aes256CbcPkcs5Pad.class.getName(),
+        putService("Cipher", "AES_256/CBC/PKCS5Padding",
+                FeedbackCipher.Aes256CbcPkcs5Pad.class.getName(), FeedbackCipher.Aes256CbcPkcs5Pad::new,
                 "AES_256/CBC/PKCS7Padding", "OID.2.16.840.1.101.3.4.1.42", "2.16.840.1.101.3.4.1.42");
-        putService("Cipher", "AES_128/OFB/NoPadding", FeedbackCipher.Aes128OfbNoPad.class.getName(),
+        putService("Cipher", "AES_128/OFB/NoPadding",
+                FeedbackCipher.Aes128OfbNoPad.class.getName(), FeedbackCipher.Aes128OfbNoPad::new,
                 "OID.2.16.840.1.101.3.4.1.3", "2.16.840.1.101.3.4.1.3");
-        putService("Cipher", "AES_192/OFB/NoPadding", FeedbackCipher.Aes192OfbNoPad.class.getName(),
+        putService("Cipher", "AES_192/OFB/NoPadding",
+                FeedbackCipher.Aes192OfbNoPad.class.getName(), FeedbackCipher.Aes192OfbNoPad::new,
                 "OID.2.16.840.1.101.3.4.1.23", "2.16.840.1.101.3.4.1.23");
-        putService("Cipher", "AES_256/OFB/NoPadding", FeedbackCipher.Aes256OfbNoPad.class.getName(),
+        putService("Cipher", "AES_256/OFB/NoPadding",
+                FeedbackCipher.Aes256OfbNoPad.class.getName(), FeedbackCipher.Aes256OfbNoPad::new,
                 "OID.2.16.840.1.101.3.4.1.43", "2.16.840.1.101.3.4.1.43");
-        putService("Cipher", "AES_128/CFB/NoPadding", FeedbackCipher.Aes128CfbNoPad.class.getName(),
+        putService("Cipher", "AES_128/CFB/NoPadding",
+                FeedbackCipher.Aes128CfbNoPad.class.getName(), FeedbackCipher.Aes128CfbNoPad::new,
                 "OID.2.16.840.1.101.3.4.1.4", "2.16.840.1.101.3.4.1.4");
-        putService("Cipher", "AES_192/CFB/NoPadding", FeedbackCipher.Aes192CfbNoPad.class.getName(),
+        putService("Cipher", "AES_192/CFB/NoPadding",
+                FeedbackCipher.Aes192CfbNoPad.class.getName(), FeedbackCipher.Aes192CfbNoPad::new,
                 "OID.2.16.840.1.101.3.4.1.24", "2.16.840.1.101.3.4.1.24");
-        putService("Cipher", "AES_256/CFB/NoPadding", FeedbackCipher.Aes256CfbNoPad.class.getName(),
+        putService("Cipher", "AES_256/CFB/NoPadding",
+                FeedbackCipher.Aes256CfbNoPad.class.getName(), FeedbackCipher.Aes256CfbNoPad::new,
                 "OID.2.16.840.1.101.3.4.1.44", "2.16.840.1.101.3.4.1.44");
-        putService("Cipher", "AES_128/GCM/NoPadding", AeadCipher.Aes128Gcm.class.getName(),
+        putService("Cipher", "AES_128/GCM/NoPadding",
+                AeadCipher.Aes128Gcm.class.getName(), AeadCipher.Aes128Gcm::new,
                 "OID.2.16.840.1.101.3.4.1.6", "2.16.840.1.101.3.4.1.6");
-        putService("Cipher", "AES_192/GCM/NoPadding", AeadCipher.Aes192Gcm.class.getName(),
+        putService("Cipher", "AES_192/GCM/NoPadding",
+                AeadCipher.Aes192Gcm.class.getName(), AeadCipher.Aes192Gcm::new,
                 "OID.2.16.840.1.101.3.4.1.26", "2.16.840.1.101.3.4.1.26");
-        putService("Cipher", "AES_256/GCM/NoPadding", AeadCipher.Aes256Gcm.class.getName(),
+        putService("Cipher", "AES_256/GCM/NoPadding",
+                AeadCipher.Aes256Gcm.class.getName(), AeadCipher.Aes256Gcm::new,
                 "OID.2.16.840.1.101.3.4.1.46", "2.16.840.1.101.3.4.1.46");
-        putService("Cipher", "AES/KW/NoPadding", WrapCipher.AesWrap.class.getName(),
+        putService("Cipher", "AES/KW/NoPadding",
+                WrapCipher.AesWrap.class.getName(), WrapCipher.AesWrap::new,
                 "AESWrap", "AES-KW");
-        putService("Cipher", "AES_128/KW/NoPadding", WrapCipher.AesWrap128.class.getName(), "AESWrap_128",
+        putService("Cipher", "AES_128/KW/NoPadding",
+                WrapCipher.AesWrap128.class.getName(), WrapCipher.AesWrap128::new, "AESWrap_128",
                 "OID.2.16.840.1.101.3.4.1.5", "2.16.840.1.101.3.4.1.5");
-        putService("Cipher", "AES_192/KW/NoPadding", WrapCipher.AesWrap192.class.getName(), "AESWrap_192",
+        putService("Cipher", "AES_192/KW/NoPadding",
+                WrapCipher.AesWrap192.class.getName(), WrapCipher.AesWrap192::new, "AESWrap_192",
                 "OID.2.16.840.1.101.3.4.1.25", "2.16.840.1.101.3.4.1.25");
-        putService("Cipher", "AES_256/KW/NoPadding", WrapCipher.AesWrap256.class.getName(), "AESWrap_256",
+        putService("Cipher", "AES_256/KW/NoPadding",
+                WrapCipher.AesWrap256.class.getName(), WrapCipher.AesWrap256::new, "AESWrap_256",
                 "OID.2.16.840.1.101.3.4.1.45", "2.16.840.1.101.3.4.1.45");
-        putService("Cipher", "AES/KWP/NoPadding", WrapCipher.AesWrapPad.class.getName(),
+        putService("Cipher", "AES/KWP/NoPadding",
+                WrapCipher.AesWrapPad.class.getName(), WrapCipher.AesWrapPad::new,
                 "AESWrapPad", "AES-KWP");
-        putService("Cipher", "AES_128/KWP/NoPadding", WrapCipher.AesWrapPad128.class.getName(), "AESWrapPad_128",
+        putService("Cipher", "AES_128/KWP/NoPadding",
+                WrapCipher.AesWrapPad128.class.getName(), WrapCipher.AesWrapPad128::new, "AESWrapPad_128",
                 "OID.2.16.840.1.101.3.4.1.8", "2.16.840.1.101.3.4.1.8");
-        putService("Cipher", "AES_192/KWP/NoPadding", WrapCipher.AesWrapPad192.class.getName(), "AESWrapPad_192",
+        putService("Cipher", "AES_192/KWP/NoPadding",
+                WrapCipher.AesWrapPad192.class.getName(), WrapCipher.AesWrapPad192::new, "AESWrapPad_192",
                 "OID.2.16.840.1.101.3.4.1.28", "2.16.840.1.101.3.4.1.28");
-        putService("Cipher", "AES_256/KWP/NoPadding", WrapCipher.AesWrapPad256.class.getName(), "AESWrapPad_256",
+        putService("Cipher", "AES_256/KWP/NoPadding",
+                WrapCipher.AesWrapPad256.class.getName(), WrapCipher.AesWrapPad256::new, "AESWrapPad_256",
                 "OID.2.16.840.1.101.3.4.1.48", "2.16.840.1.101.3.4.1.48");
-        putService("Cipher", "PBEWithHmacSHA1AndAES_128", PbeCipher.PBEWithHmacSHA1AndAES128.class.getName());
-        putService("Cipher", "PBEWithHmacSHA224AndAES_128", PbeCipher.PBEWithHmacSHA224AndAES128.class.getName());
-        putService("Cipher", "PBEWithHmacSHA256AndAES_128", PbeCipher.PBEWithHmacSHA256AndAES128.class.getName());
-        putService("Cipher", "PBEWithHmacSHA384AndAES_128", PbeCipher.PBEWithHmacSHA384AndAES128.class.getName());
-        putService("Cipher", "PBEWithHmacSHA512AndAES_128", PbeCipher.PBEWithHmacSHA512AndAES128.class.getName());
-        putService("Cipher", "PBEWithHmacSHA1AndAES_256", PbeCipher.PBEWithHmacSHA1AndAES256.class.getName());
-        putService("Cipher", "PBEWithHmacSHA224AndAES_256", PbeCipher.PBEWithHmacSHA224AndAES256.class.getName());
-        putService("Cipher", "PBEWithHmacSHA256AndAES_256", PbeCipher.PBEWithHmacSHA256AndAES256.class.getName());
-        putService("Cipher", "PBEWithHmacSHA384AndAES_256", PbeCipher.PBEWithHmacSHA384AndAES256.class.getName());
-        putService("Cipher", "PBEWithHmacSHA512AndAES_256", PbeCipher.PBEWithHmacSHA512AndAES256.class.getName());
+        putService("Cipher", "PBEWithHmacSHA1AndAES_128",
+                PbeCipher.PBEWithHmacSHA1AndAES128.class.getName(), PbeCipher.PBEWithHmacSHA1AndAES128::new);
+        putService("Cipher", "PBEWithHmacSHA224AndAES_128",
+                PbeCipher.PBEWithHmacSHA224AndAES128.class.getName(), PbeCipher.PBEWithHmacSHA224AndAES128::new);
+        putService("Cipher", "PBEWithHmacSHA256AndAES_128",
+                PbeCipher.PBEWithHmacSHA256AndAES128.class.getName(), PbeCipher.PBEWithHmacSHA256AndAES128::new);
+        putService("Cipher", "PBEWithHmacSHA384AndAES_128",
+                PbeCipher.PBEWithHmacSHA384AndAES128.class.getName(), PbeCipher.PBEWithHmacSHA384AndAES128::new);
+        putService("Cipher", "PBEWithHmacSHA512AndAES_128",
+                PbeCipher.PBEWithHmacSHA512AndAES128.class.getName(), PbeCipher.PBEWithHmacSHA512AndAES128::new);
+        putService("Cipher", "PBEWithHmacSHA1AndAES_256",
+                PbeCipher.PBEWithHmacSHA1AndAES256.class.getName(), PbeCipher.PBEWithHmacSHA1AndAES256::new);
+        putService("Cipher", "PBEWithHmacSHA224AndAES_256",
+                PbeCipher.PBEWithHmacSHA224AndAES256.class.getName(), PbeCipher.PBEWithHmacSHA224AndAES256::new);
+        putService("Cipher", "PBEWithHmacSHA256AndAES_256",
+                PbeCipher.PBEWithHmacSHA256AndAES256.class.getName(), PbeCipher.PBEWithHmacSHA256AndAES256::new);
+        putService("Cipher", "PBEWithHmacSHA384AndAES_256",
+                PbeCipher.PBEWithHmacSHA384AndAES256.class.getName(), PbeCipher.PBEWithHmacSHA384AndAES256::new);
+        putService("Cipher", "PBEWithHmacSHA512AndAES_256",
+                PbeCipher.PBEWithHmacSHA512AndAES256.class.getName(), PbeCipher.PBEWithHmacSHA512AndAES256::new);
         if (isDESEDESupported()) {
-            putService("Cipher", "DESede", FeedbackCipher.DESEDE.class.getName(), "TripleDES");
-            putService("Cipher", "DESede/CBC/PKCS5Padding", FeedbackCipher.DesEdeCbcPkcs5Pad.class.getName(),
+            putService("Cipher", "DESede",
+                    FeedbackCipher.DESEDE.class.getName(), FeedbackCipher.DESEDE::new, "TripleDES");
+            putService("Cipher", "DESede/CBC/PKCS5Padding",
+                    FeedbackCipher.DesEdeCbcPkcs5Pad.class.getName(), FeedbackCipher.DesEdeCbcPkcs5Pad::new,
                     "DESede/CBC/PKCS7Padding", "OID.1.2.840.113549.3.7", "1.2.840.113549.3.7");
         }
 
         // SP 800-131A Rev. 2 Table 5, Acceptable + SP 800-56B Rev. 2 Section 9
-        putService("Cipher", "RSA/ECB/OAEPPadding", RsaCipher.RsaOaep.class.getName());
-        putService("Cipher", "RSA/ECB/OAEPWithSHA-1andMGF1Padding", RsaCipher.RsaOaepSha1.class.getName(),
+        putService("Cipher", "RSA/ECB/OAEPPadding",
+                RsaCipher.RsaOaep.class.getName(), RsaCipher.RsaOaep::new);
+        putService("Cipher", "RSA/ECB/OAEPWithSHA-1andMGF1Padding",
+                RsaCipher.RsaOaepSha1.class.getName(), RsaCipher.RsaOaepSha1::new,
                 "RSA/ECB/OAEPWithSHA1andMGF1Padding");
-        putService("Cipher", "RSA/ECB/OAEPWithSHA-224andMGF1Padding", RsaCipher.RsaOaepSha224.class.getName(),
+        putService("Cipher", "RSA/ECB/OAEPWithSHA-224andMGF1Padding",
+                RsaCipher.RsaOaepSha224.class.getName(), RsaCipher.RsaOaepSha224::new,
                 "RSA/ECB/OAEPWithSHA224andMGF1Padding");
-        putService("Cipher", "RSA/ECB/OAEPWithSHA-256andMGF1Padding", RsaCipher.RsaOaepSha256.class.getName(),
+        putService("Cipher", "RSA/ECB/OAEPWithSHA-256andMGF1Padding",
+                RsaCipher.RsaOaepSha256.class.getName(), RsaCipher.RsaOaepSha256::new,
                 "RSA/ECB/OAEPWithSHA256andMGF1Padding");
-        putService("Cipher", "RSA/ECB/OAEPWithSHA-384andMGF1Padding", RsaCipher.RsaOaepSha384.class.getName(),
+        putService("Cipher", "RSA/ECB/OAEPWithSHA-384andMGF1Padding",
+                RsaCipher.RsaOaepSha384.class.getName(), RsaCipher.RsaOaepSha384::new,
                 "RSA/ECB/OAEPWithSHA384andMGF1Padding");
-        putService("Cipher", "RSA/ECB/OAEPWithSHA-512andMGF1Padding", RsaCipher.RsaOaepSha512.class.getName(),
+        putService("Cipher", "RSA/ECB/OAEPWithSHA-512andMGF1Padding",
+                RsaCipher.RsaOaepSha512.class.getName(), RsaCipher.RsaOaepSha512::new,
                 "RSA/ECB/OAEPWithSHA512andMGF1Padding");
 
         // KDF Implementations
-        // KDF API was added as a preview feature in JDK 24 and a core feature in JDK 25
-        if (getJavaRuntimeMajorVersion() >= 25) {
-            putService("KDF", "HKDF-SHA256", "com.oracle.jipher.internal.spi.Hkdf$HkdfSha256");
-            putService("KDF", "HKDF-SHA384", "com.oracle.jipher.internal.spi.Hkdf$HkdfSha384");
-            putService("KDF", "HKDF-SHA512", "com.oracle.jipher.internal.spi.Hkdf$HkdfSha512");
-        }
+        putService("KDF", "HKDF-SHA256",
+                Hkdf.HkdfSha256.class.getName(), Hkdf.HkdfSha256::new);
+        putService("KDF", "HKDF-SHA384",
+                Hkdf.HkdfSha384.class.getName(), Hkdf.HkdfSha384::new);
+        putService("KDF", "HKDF-SHA512",
+                Hkdf.HkdfSha512.class.getName(), Hkdf.HkdfSha512::new);
 
         // KeyAgreement Implementations
-        putService("KeyAgreement", "ECDH", KeyAgree.ECDH.class.getName(), new HashMap<>()); // Empty attribs map satisfies jacoco branches covered %
-        putService("KeyAgreement", "DH", KeyAgree.DH.class.getName(), "DiffieHellman",
+        putService("KeyAgreement", "ECDH",
+                KeyAgree.ECDH.class.getName(), KeyAgree.ECDH::new, new HashMap<>()); // Empty attribs map satisfies jacoco branches covered %
+        putService("KeyAgreement", "DH",
+                KeyAgree.DH.class.getName(), KeyAgree.DH::new, "DiffieHellman",
                 "OID.1.2.840.113549.1.3.1", "1.2.840.113549.1.3.1");
 
         // KeyFactory Implementations
-        putService("KeyFactory", "RSA", RsaKeyFactory.class.getName(),
+        putService("KeyFactory", "RSA",
+                RsaKeyFactory.class.getName(), RsaKeyFactory::new,
                 "OID.1.2.840.113549.1.1", "1.2.840.113549.1.1",
                 "OID.1.2.840.113549.1.1.1", "1.2.840.113549.1.1.1");
-        putService("KeyFactory", "RSASSA-PSS", RsaKeyFactory.class.getName(), "PSS",
+        putService("KeyFactory", "RSASSA-PSS",
+                RsaKeyFactory.class.getName(), RsaKeyFactory::new, "PSS",
                 "OID.1.2.840.113549.1.1.10", "1.2.840.113549.1.1.10");
-        putService("KeyFactory", "EC", EcKeyFactory.class.getName(), "EllipticCurve",
+        putService("KeyFactory", "EC",
+                EcKeyFactory.class.getName(), EcKeyFactory::new, "EllipticCurve",
                 "OID.1.2.840.10045.2.1", "1.2.840.10045.2.1");
         if (isDSASupported()) {
-            putService("KeyFactory", "DSA", DsaKeyFactory.class.getName(),
+            putService("KeyFactory", "DSA",
+                    DsaKeyFactory.class.getName(), DsaKeyFactory::new,
                     "OID.1.2.840.10040.4.1", "1.2.840.10040.4.1",
                     "OID.1.3.14.3.2.12", "1.3.14.3.2.12");
         }
-        putService("KeyFactory", "DH", DhKeyFactory.class.getName(), "DiffieHellman",
+        putService("KeyFactory", "DH",
+                DhKeyFactory.class.getName(), DhKeyFactory::new, "DiffieHellman",
                 "OID.1.2.840.113549.1.3.1", "1.2.840.113549.1.3.1");
 
         // KeyGenerator implementations
-        putService("KeyGenerator", "AES", AesKeyGenerator.class.getName(), "Rijndael",
+        putService("KeyGenerator", "AES",
+                AesKeyGenerator.class.getName(), AesKeyGenerator::new, "Rijndael",
                 "OID.2.16.840.1.101.3.4.1", "2.16.840.1.101.3.4.1");
-        putService("KeyGenerator", "AES_128/ECB/NoPadding", AesKeyGenerator.Aes128.class.getName(),
+        putService("KeyGenerator", "AES_128/ECB/NoPadding",
+                AesKeyGenerator.Aes128.class.getName(), AesKeyGenerator.Aes128::new,
                 "OID.2.16.840.1.101.3.4.1.1", "2.16.840.1.101.3.4.1.1");
-        putService("KeyGenerator", "AES_192/ECB/NoPadding", AesKeyGenerator.Aes192.class.getName(),
+        putService("KeyGenerator", "AES_192/ECB/NoPadding",
+                AesKeyGenerator.Aes192.class.getName(), AesKeyGenerator.Aes192::new,
                 "OID.2.16.840.1.101.3.4.1.21", "2.16.840.1.101.3.4.1.21");
-        putService("KeyGenerator", "AES_256/ECB/NoPadding", AesKeyGenerator.Aes256.class.getName(),
+        putService("KeyGenerator", "AES_256/ECB/NoPadding",
+                AesKeyGenerator.Aes256.class.getName(), AesKeyGenerator.Aes256::new,
                 "OID.2.16.840.1.101.3.4.1.41", "2.16.840.1.101.3.4.1.41");
-        putService("KeyGenerator", "AES_128/CBC/PKCS5Padding", AesKeyGenerator.Aes128.class.getName(),
+        putService("KeyGenerator", "AES_128/CBC/PKCS5Padding",
+                AesKeyGenerator.Aes128.class.getName(), AesKeyGenerator.Aes128::new,
                 "AES_128/CBC/PKCS7Padding", "OID.2.16.840.1.101.3.4.1.2", "2.16.840.1.101.3.4.1.2");
-        putService("KeyGenerator", "AES_192/CBC/PKCS5Padding", AesKeyGenerator.Aes192.class.getName(),
+        putService("KeyGenerator", "AES_192/CBC/PKCS5Padding",
+                AesKeyGenerator.Aes192.class.getName(), AesKeyGenerator.Aes192::new,
                 "AES_192/CBC/PKCS7Padding", "OID.2.16.840.1.101.3.4.1.22", "2.16.840.1.101.3.4.1.22");
-        putService("KeyGenerator", "AES_256/CBC/PKCS5Padding", AesKeyGenerator.Aes256.class.getName(),
+        putService("KeyGenerator", "AES_256/CBC/PKCS5Padding",
+                AesKeyGenerator.Aes256.class.getName(), AesKeyGenerator.Aes256::new,
                 "AES_256/CBC/PKCS7Padding", "OID.2.16.840.1.101.3.4.1.42", "2.16.840.1.101.3.4.1.42");
-        putService("KeyGenerator", "AES_128/OFB/NoPadding", AesKeyGenerator.Aes128.class.getName(),
+        putService("KeyGenerator", "AES_128/OFB/NoPadding",
+                AesKeyGenerator.Aes128.class.getName(), AesKeyGenerator.Aes128::new,
                 "OID.2.16.840.1.101.3.4.1.3", "2.16.840.1.101.3.4.1.3");
-        putService("KeyGenerator", "AES_192/OFB/NoPadding", AesKeyGenerator.Aes192.class.getName(),
+        putService("KeyGenerator", "AES_192/OFB/NoPadding",
+                AesKeyGenerator.Aes192.class.getName(), AesKeyGenerator.Aes192::new,
                 "OID.2.16.840.1.101.3.4.1.23", "2.16.840.1.101.3.4.1.23");
-        putService("KeyGenerator", "AES_256/OFB/NoPadding", AesKeyGenerator.Aes256.class.getName(),
+        putService("KeyGenerator", "AES_256/OFB/NoPadding",
+                AesKeyGenerator.Aes256.class.getName(), AesKeyGenerator.Aes256::new,
                 "OID.2.16.840.1.101.3.4.1.43", "2.16.840.1.101.3.4.1.43");
-        putService("KeyGenerator", "AES_128/CFB/NoPadding", AesKeyGenerator.Aes128.class.getName(),
+        putService("KeyGenerator", "AES_128/CFB/NoPadding",
+                AesKeyGenerator.Aes128.class.getName(), AesKeyGenerator.Aes128::new,
                 "OID.2.16.840.1.101.3.4.1.4", "2.16.840.1.101.3.4.1.4");
-        putService("KeyGenerator", "AES_192/CFB/NoPadding", AesKeyGenerator.Aes192.class.getName(),
+        putService("KeyGenerator", "AES_192/CFB/NoPadding",
+                AesKeyGenerator.Aes192.class.getName(), AesKeyGenerator.Aes192::new,
                 "OID.2.16.840.1.101.3.4.1.24", "2.16.840.1.101.3.4.1.24");
-        putService("KeyGenerator", "AES_256/CFB/NoPadding", AesKeyGenerator.Aes256.class.getName(),
+        putService("KeyGenerator", "AES_256/CFB/NoPadding",
+                AesKeyGenerator.Aes256.class.getName(), AesKeyGenerator.Aes256::new,
                 "OID.2.16.840.1.101.3.4.1.44", "2.16.840.1.101.3.4.1.44");
-        putService("KeyGenerator", "AES_128/GCM/NoPadding", AesKeyGenerator.Aes128.class.getName(),
+        putService("KeyGenerator", "AES_128/GCM/NoPadding",
+                AesKeyGenerator.Aes128.class.getName(), AesKeyGenerator.Aes128::new,
                 "OID.2.16.840.1.101.3.4.1.6", "2.16.840.1.101.3.4.1.6");
-        putService("KeyGenerator", "AES_192/GCM/NoPadding", AesKeyGenerator.Aes192.class.getName(),
+        putService("KeyGenerator", "AES_192/GCM/NoPadding",
+                AesKeyGenerator.Aes192.class.getName(), AesKeyGenerator.Aes192::new,
                 "OID.2.16.840.1.101.3.4.1.26", "2.16.840.1.101.3.4.1.26");
-        putService("KeyGenerator", "AES_256/GCM/NoPadding", AesKeyGenerator.Aes256.class.getName(),
+        putService("KeyGenerator", "AES_256/GCM/NoPadding",
+                AesKeyGenerator.Aes256.class.getName(), AesKeyGenerator.Aes256::new,
                 "OID.2.16.840.1.101.3.4.1.46", "2.16.840.1.101.3.4.1.46");
-        putService("KeyGenerator", "SunTls12Prf", TlsPrfGenerator.class.getName());
-        putService("KeyGenerator", "SunTlsExtendedMasterSecret", TlsMasterSecretGenerator.class.getName());
-        putService("KeyGenerator", "SunTlsKeyMaterial", TlsKeyMaterialGenerator.class.getName(),
+        putService("KeyGenerator", "SunTls12Prf",
+                TlsPrfGenerator.class.getName(), TlsPrfGenerator::new);
+        putService("KeyGenerator", "SunTlsExtendedMasterSecret",
+                TlsMasterSecretGenerator.class.getName(), TlsMasterSecretGenerator::new);
+        putService("KeyGenerator", "SunTlsKeyMaterial",
+                TlsKeyMaterialGenerator.class.getName(), TlsKeyMaterialGenerator::new,
                 "SunTls12KeyMaterial");
-        putService("KeyGenerator", "SunTlsRsaPremasterSecret", TlsRsaPremasterSecretGenerator.class.getName(),
+        putService("KeyGenerator", "SunTlsRsaPremasterSecret",
+                TlsRsaPremasterSecretGenerator.class.getName(), TlsRsaPremasterSecretGenerator::new,
                 "SunTls12RsaPremasterSecret");
 
-        putService("KeyGenerator", "HmacSHA1", HmacKeyGenerator.HmacSha1.class.getName(),
+        putService("KeyGenerator", "HmacSHA1",
+                HmacKeyGenerator.HmacSha1.class.getName(), HmacKeyGenerator.HmacSha1::new,
                 "OID.1.2.840.113549.2.7", "1.2.840.113549.2.7");
-        putService("KeyGenerator", "HmacSHA224", HmacKeyGenerator.HmacSha224.class.getName(),
+        putService("KeyGenerator", "HmacSHA224",
+                HmacKeyGenerator.HmacSha224.class.getName(), HmacKeyGenerator.HmacSha224::new,
                 "OID.1.2.840.113549.2.8", "1.2.840.113549.2.8");
-        putService("KeyGenerator", "HmacSHA256", HmacKeyGenerator.HmacSha256.class.getName(),
+        putService("KeyGenerator", "HmacSHA256",
+                HmacKeyGenerator.HmacSha256.class.getName(), HmacKeyGenerator.HmacSha256::new,
                 "OID.1.2.840.113549.2.9", "1.2.840.113549.2.9");
-        putService("KeyGenerator", "HmacSHA384", HmacKeyGenerator.HmacSha384.class.getName(),
+        putService("KeyGenerator", "HmacSHA384",
+                HmacKeyGenerator.HmacSha384.class.getName(), HmacKeyGenerator.HmacSha384::new,
                 "OID.1.2.840.113549.2.10", "1.2.840.113549.2.10");
-        putService("KeyGenerator", "HmacSHA512", HmacKeyGenerator.HmacSha512.class.getName(),
+        putService("KeyGenerator", "HmacSHA512",
+                HmacKeyGenerator.HmacSha512.class.getName(), HmacKeyGenerator.HmacSha512::new,
                 "OID.1.2.840.113549.2.11", "1.2.840.113549.2.11");
 
         // KeyPairGenerator Implementations
-        putService("KeyPairGenerator", "RSA", KeyPairGen.Rsa.class.getName(),
+        putService("KeyPairGenerator", "RSA",
+                KeyPairGen.Rsa.class.getName(), KeyPairGen.Rsa::new,
                 "OID.1.2.840.113549.1.1", "1.2.840.113549.1.1",
                 "OID.1.2.840.113549.1.1.1", "1.2.840.113549.1.1.1");
-        putService("KeyPairGenerator", "RSASSA-PSS", KeyPairGen.Rsa.class.getName(), "PSS",
+        putService("KeyPairGenerator", "RSASSA-PSS",
+                KeyPairGen.Rsa.class.getName(), KeyPairGen.Rsa::new, "PSS",
                 "OID.1.2.840.113549.1.1.10", "1.2.840.113549.1.1.10");
-        putService("KeyPairGenerator", "EC", KeyPairGen.Ec.class.getName(), "EllipticCurve",
+        putService("KeyPairGenerator", "EC",
+                KeyPairGen.Ec.class.getName(), KeyPairGen.Ec::new, "EllipticCurve",
                 "OID.1.2.840.10045.2.1", "1.2.840.10045.2.1");
-        putService("KeyPairGenerator", "DH", KeyPairGen.Dh.class.getName(), "DiffieHellman",
+        putService("KeyPairGenerator", "DH",
+                KeyPairGen.Dh.class.getName(), KeyPairGen.Dh::new, "DiffieHellman",
                 "OID.1.2.840.113549.1.3.1", "1.2.840.113549.1.3.1");
 
         // Mac Implementations
-        putService("Mac", "HmacSHA1", Hmac.HmacSha1.class.getName(),
+        putService("Mac", "HmacSHA1",
+                Hmac.HmacSha1.class.getName(), Hmac.HmacSha1::new,
                 "OID.1.2.840.113549.2.7", "1.2.840.113549.2.7");
-        putService("Mac", "HmacSHA224", Hmac.HmacSha224.class.getName(),
+        putService("Mac", "HmacSHA224",
+                Hmac.HmacSha224.class.getName(), Hmac.HmacSha224::new,
                 "OID.1.2.840.113549.2.8", "1.2.840.113549.2.8");
-        putService("Mac", "HmacSHA256", Hmac.HmacSha256.class.getName(),
+        putService("Mac", "HmacSHA256",
+                Hmac.HmacSha256.class.getName(), Hmac.HmacSha256::new,
                 "OID.1.2.840.113549.2.9", "1.2.840.113549.2.9");
-        putService("Mac", "HmacSHA384", Hmac.HmacSha384.class.getName(),
+        putService("Mac", "HmacSHA384",
+                Hmac.HmacSha384.class.getName(), Hmac.HmacSha384::new,
                 "OID.1.2.840.113549.2.10", "1.2.840.113549.2.10");
-        putService("Mac", "HmacSHA512", Hmac.HmacSha512.class.getName(),
+        putService("Mac", "HmacSHA512",
+                Hmac.HmacSha512.class.getName(), Hmac.HmacSha512::new,
                 "OID.1.2.840.113549.2.11", "1.2.840.113549.2.11");
 
         // MessageDigest Implementations
-        putService("MessageDigest", "SHA-1", Digest.Sha1.class.getName(),
+        putService("MessageDigest", "SHA-1",
+                Digest.Sha1.class.getName(), Digest.Sha1::new,
                 "SHA1", "SHA", "OID.1.3.14.3.2.26", "1.3.14.3.2.26");
-        putService("MessageDigest", "SHA-224", Digest.Sha224.class.getName(),
+        putService("MessageDigest", "SHA-224",
+                Digest.Sha224.class.getName(), Digest.Sha224::new,
                 "SHA224", "OID.2.16.840.1.101.3.4.2.4", "2.16.840.1.101.3.4.2.4");
-        putService("MessageDigest", "SHA-256", Digest.Sha256.class.getName(),
+        putService("MessageDigest", "SHA-256",
+                Digest.Sha256.class.getName(), Digest.Sha256::new,
                 "SHA256", "OID.2.16.840.1.101.3.4.2.1", "2.16.840.1.101.3.4.2.1");
-        putService("MessageDigest", "SHA-384", Digest.Sha384.class.getName(),
+        putService("MessageDigest", "SHA-384",
+                Digest.Sha384.class.getName(), Digest.Sha384::new,
                 "SHA384", "OID.2.16.840.1.101.3.4.2.2", "2.16.840.1.101.3.4.2.2");
-        putService("MessageDigest", "SHA-512", Digest.Sha512.class.getName(),
+        putService("MessageDigest", "SHA-512",
+                Digest.Sha512.class.getName(), Digest.Sha512::new,
                 "SHA512", "OID.2.16.840.1.101.3.4.2.3", "2.16.840.1.101.3.4.2.3");
-        putService("MessageDigest", "SHA3-224", Digest.Sha3_224.class.getName(),
+        putService("MessageDigest", "SHA3-224",
+                Digest.Sha3_224.class.getName(), Digest.Sha3_224::new,
                 "OID.2.16.840.1.101.3.4.2.7", "2.16.840.1.101.3.4.2.7");
-        putService("MessageDigest", "SHA3-256", Digest.Sha3_256.class.getName(),
+        putService("MessageDigest", "SHA3-256",
+                Digest.Sha3_256.class.getName(), Digest.Sha3_256::new,
                 "OID.2.16.840.1.101.3.4.2.8", "2.16.840.1.101.3.4.2.8");
-        putService("MessageDigest", "SHA3-384", Digest.Sha3_384.class.getName(),
+        putService("MessageDigest", "SHA3-384",
+                Digest.Sha3_384.class.getName(), Digest.Sha3_384::new,
                 "OID.2.16.840.1.101.3.4.2.9", "2.16.840.1.101.3.4.2.9");
-        putService("MessageDigest", "SHA3-512", Digest.Sha3_512.class.getName(),
+        putService("MessageDigest", "SHA3-512",
+                Digest.Sha3_512.class.getName(), Digest.Sha3_512::new,
                 "OID.2.16.840.1.101.3.4.2.10", "2.16.840.1.101.3.4.2.10");
 
         // SecureRandom Implementations
         Map<String,String> threadSafeAttr = new HashMap<>();
         threadSafeAttr.put("ThreadSafe", "true");
-        putService("SecureRandom", "DRBG", Drbg.class.getName(),
+        putService("SecureRandom", "DRBG",
+                Drbg.class.getName(), Drbg::new,
                 threadSafeAttr, "Default", "DefaultRandom", "SHA1PRNG", "CTRDRBG", "CTRDRBG128",
                 "NativePRNG", "NativePRNGNonBlocking");
 
         // SecretKeyFactory implementations
-        putService("SecretKeyFactory", "AES", SymmKeyFactory.AES.class.getName());
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA1", Pbkdf2KeyFactory.SHA1.class.getName(), "PBKDF2WithSHA1",
+        putService("SecretKeyFactory", "AES",
+                SymmKeyFactory.AES.class.getName(), SymmKeyFactory.AES::new);
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA1",
+                Pbkdf2KeyFactory.SHA1.class.getName(), Pbkdf2KeyFactory.SHA1::new, "PBKDF2WithSHA1",
                 "OID.1.2.840.113549.1.5.12", "1.2.840.113549.1.5.12");
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA224", Pbkdf2KeyFactory.SHA224.class.getName(), "PBKDF2WithSHA224");
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA256", Pbkdf2KeyFactory.SHA256.class.getName(), "PBKDF2WithSHA256");
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA384", Pbkdf2KeyFactory.SHA384.class.getName(), "PBKDF2WithSHA384");
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA512", Pbkdf2KeyFactory.SHA512.class.getName(), "PBKDF2WithSHA512");
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA1and8BIT", Pbkdf2KeyFactory.SHA1_8BIT.class.getName(), "PBKDF2withASCII", "PBKDF2with8BIT");
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA224and8BIT", Pbkdf2KeyFactory.SHA224_8BIT.class.getName());
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA256and8BIT", Pbkdf2KeyFactory.SHA256_8BIT.class.getName());
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA384and8BIT", Pbkdf2KeyFactory.SHA384_8BIT.class.getName());
-        putService("SecretKeyFactory", "PBKDF2WithHmacSHA512and8BIT", Pbkdf2KeyFactory.SHA512_8BIT.class.getName());
-        putService("SecretKeyFactory", "PBES2", PbeKeyFactory.PBES2.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA1AndAES_128", PbeKeyFactory.PBEWithHmacSHA1AndAES128.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA224AndAES_128", PbeKeyFactory.PBEWithHmacSHA224AndAES128.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA256AndAES_128", PbeKeyFactory.PBEWithHmacSHA256AndAES128.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA384AndAES_128", PbeKeyFactory.PBEWithHmacSHA384AndAES128.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA512AndAES_128", PbeKeyFactory.PBEWithHmacSHA512AndAES128.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA1AndAES_256", PbeKeyFactory.PBEWithHmacSHA1AndAES256.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA224AndAES_256", PbeKeyFactory.PBEWithHmacSHA224AndAES256.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA256AndAES_256", PbeKeyFactory.PBEWithHmacSHA256AndAES256.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA384AndAES_256", PbeKeyFactory.PBEWithHmacSHA384AndAES256.class.getName());
-        putService("SecretKeyFactory", "PBEWithHmacSHA512AndAES_256", PbeKeyFactory.PBEWithHmacSHA512AndAES256.class.getName());
-        putService("SecretKeyFactory", "PBE", PbeKeyFactory.PBE.class.getName());
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA224",
+                Pbkdf2KeyFactory.SHA224.class.getName(), Pbkdf2KeyFactory.SHA224::new, "PBKDF2WithSHA224");
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA256",
+                Pbkdf2KeyFactory.SHA256.class.getName(), Pbkdf2KeyFactory.SHA256::new, "PBKDF2WithSHA256");
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA384",
+                Pbkdf2KeyFactory.SHA384.class.getName(), Pbkdf2KeyFactory.SHA384::new, "PBKDF2WithSHA384");
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA512",
+                Pbkdf2KeyFactory.SHA512.class.getName(), Pbkdf2KeyFactory.SHA512::new, "PBKDF2WithSHA512");
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA1and8BIT",
+                Pbkdf2KeyFactory.SHA1_8BIT.class.getName(), Pbkdf2KeyFactory.SHA1_8BIT::new,
+                "PBKDF2withASCII", "PBKDF2with8BIT");
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA224and8BIT",
+                Pbkdf2KeyFactory.SHA224_8BIT.class.getName(), Pbkdf2KeyFactory.SHA224_8BIT::new);
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA256and8BIT",
+                Pbkdf2KeyFactory.SHA256_8BIT.class.getName(), Pbkdf2KeyFactory.SHA256_8BIT::new);
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA384and8BIT",
+                Pbkdf2KeyFactory.SHA384_8BIT.class.getName(), Pbkdf2KeyFactory.SHA384_8BIT::new);
+        putService("SecretKeyFactory", "PBKDF2WithHmacSHA512and8BIT",
+                Pbkdf2KeyFactory.SHA512_8BIT.class.getName(), Pbkdf2KeyFactory.SHA512_8BIT::new);
+        putService("SecretKeyFactory", "PBES2",
+                PbeKeyFactory.PBES2.class.getName(), PbeKeyFactory.PBES2::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA1AndAES_128",
+                PbeKeyFactory.PBEWithHmacSHA1AndAES128.class.getName(), PbeKeyFactory.PBEWithHmacSHA1AndAES128::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA224AndAES_128",
+                PbeKeyFactory.PBEWithHmacSHA224AndAES128.class.getName(), PbeKeyFactory.PBEWithHmacSHA224AndAES128::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA256AndAES_128",
+                PbeKeyFactory.PBEWithHmacSHA256AndAES128.class.getName(), PbeKeyFactory.PBEWithHmacSHA256AndAES128::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA384AndAES_128",
+                PbeKeyFactory.PBEWithHmacSHA384AndAES128.class.getName(), PbeKeyFactory.PBEWithHmacSHA384AndAES128::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA512AndAES_128",
+                PbeKeyFactory.PBEWithHmacSHA512AndAES128.class.getName(), PbeKeyFactory.PBEWithHmacSHA512AndAES128::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA1AndAES_256",
+                PbeKeyFactory.PBEWithHmacSHA1AndAES256.class.getName(), PbeKeyFactory.PBEWithHmacSHA1AndAES256::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA224AndAES_256",
+                PbeKeyFactory.PBEWithHmacSHA224AndAES256.class.getName(), PbeKeyFactory.PBEWithHmacSHA224AndAES256::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA256AndAES_256",
+                PbeKeyFactory.PBEWithHmacSHA256AndAES256.class.getName(), PbeKeyFactory.PBEWithHmacSHA256AndAES256::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA384AndAES_256",
+                PbeKeyFactory.PBEWithHmacSHA384AndAES256.class.getName(), PbeKeyFactory.PBEWithHmacSHA384AndAES256::new);
+        putService("SecretKeyFactory", "PBEWithHmacSHA512AndAES_256",
+                PbeKeyFactory.PBEWithHmacSHA512AndAES256.class.getName(), PbeKeyFactory.PBEWithHmacSHA512AndAES256::new);
+        putService("SecretKeyFactory", "PBE",
+                PbeKeyFactory.PBE.class.getName(), PbeKeyFactory.PBE::new);
         if (isDESEDESupported()) {
-            putService("SecretKeyFactory", "DESede", SymmKeyFactory.DESede.class.getName(), "TripleDES");
+            putService("SecretKeyFactory", "DESede",
+                    SymmKeyFactory.DESede.class.getName(), SymmKeyFactory.DESede::new, "TripleDES");
         }
 
         // Signature Implementations
         if (System.getProperty("java.vendor").startsWith("Oracle") && getJavaRuntimeMajorVersion() < 26) {
             // Workaround: Signal javax.crypto.JarVerifier class that Signature support is operational
-            putService("Signature", "MD5WithRSA", DummyJCEVerifierSignature.class.getName());
+            putService("Signature", "MD5WithRSA",
+                    DummyJCEVerifierSignature.class.getName(), DummyJCEVerifierSignature::new);
         }
         if (isSHA1DigestSignatureSupported()) {
-            putService("Signature", "SHA1withRSA", RsaDigestSig.Sha1WithRsa.class.getName(),
+            putService("Signature", "SHA1withRSA",
+                    RsaDigestSig.Sha1WithRsa.class.getName(), RsaDigestSig.Sha1WithRsa::new,
                     "OID.1.2.840.113549.1.1.5", "1.2.840.113549.1.1.5",
                     "OID.1.3.14.3.2.29", "1.3.14.3.2.29");
         }
-        putService("Signature", "SHA224withRSA", RsaDigestSig.Sha224WithRsa.class.getName(),
+        putService("Signature", "SHA224withRSA",
+                RsaDigestSig.Sha224WithRsa.class.getName(), RsaDigestSig.Sha224WithRsa::new,
                 "OID.1.2.840.113549.1.1.14", "1.2.840.113549.1.1.14");
-        putService("Signature", "SHA256withRSA", RsaDigestSig.Sha256WithRsa.class.getName(),
+        putService("Signature", "SHA256withRSA",
+                RsaDigestSig.Sha256WithRsa.class.getName(), RsaDigestSig.Sha256WithRsa::new,
                 "OID.1.2.840.113549.1.1.11", "1.2.840.113549.1.1.11");
-        putService("Signature", "SHA384withRSA", RsaDigestSig.Sha384WithRsa.class.getName(),
+        putService("Signature", "SHA384withRSA",
+                RsaDigestSig.Sha384WithRsa.class.getName(), RsaDigestSig.Sha384WithRsa::new,
                 "OID.1.2.840.113549.1.1.12", "1.2.840.113549.1.1.12");
-        putService("Signature", "SHA512withRSA", RsaDigestSig.Sha512WithRsa.class.getName(),
+        putService("Signature", "SHA512withRSA",
+                RsaDigestSig.Sha512WithRsa.class.getName(), RsaDigestSig.Sha512WithRsa::new,
                 "OID.1.2.840.113549.1.1.13", "1.2.840.113549.1.1.13");
-        putService("Signature", "NONEwithRSA", NoDigestSig.NoneWithRsa.class.getName());
+        putService("Signature", "NONEwithRSA",
+                NoDigestSig.NoneWithRsa.class.getName(), NoDigestSig.NoneWithRsa::new);
 
         if (isSHA1DigestSignatureSupported()) {
-            putService("Signature", "SHA1withRSAandMGF1", RsaPssDigestSig.RsaPssSha1.class.getName());
+            putService("Signature", "SHA1withRSAandMGF1",
+                    RsaPssDigestSig.RsaPssSha1.class.getName(), RsaPssDigestSig.RsaPssSha1::new);
         }
-        putService("Signature", "SHA224withRSAandMGF1", RsaPssDigestSig.RsaPssSha224.class.getName(),
+        putService("Signature", "SHA224withRSAandMGF1",
+                RsaPssDigestSig.RsaPssSha224.class.getName(), RsaPssDigestSig.RsaPssSha224::new,
                 "SHA224withRSA/PSS");
-        putService("Signature", "SHA256withRSAandMGF1", RsaPssDigestSig.RsaPssSha256.class.getName(),
+        putService("Signature", "SHA256withRSAandMGF1",
+                RsaPssDigestSig.RsaPssSha256.class.getName(), RsaPssDigestSig.RsaPssSha256::new,
                 "SHA256withRSA/PSS");
-        putService("Signature", "SHA384withRSAandMGF1", RsaPssDigestSig.RsaPssSha384.class.getName(),
+        putService("Signature", "SHA384withRSAandMGF1",
+                RsaPssDigestSig.RsaPssSha384.class.getName(), RsaPssDigestSig.RsaPssSha384::new,
                 "SHA384withRSA/PSS");
-        putService("Signature", "SHA512withRSAandMGF1", RsaPssDigestSig.RsaPssSha512.class.getName(),
+        putService("Signature", "SHA512withRSAandMGF1",
+                RsaPssDigestSig.RsaPssSha512.class.getName(), RsaPssDigestSig.RsaPssSha512::new,
                 "SHA512withRSA/PSS");
-        putService("Signature", "RSASSA-PSS", RsaPssGeneralSig.class.getName(), "PSS",
+        putService("Signature", "RSASSA-PSS",
+                RsaPssGeneralSig.class.getName(), RsaPssGeneralSig::new, "PSS",
                 "OID.1.2.840.113549.1.1.10", "1.2.840.113549.1.1.10");
-        putService("Signature", "NONEwithECDSA", NoDigestSig.NoneWithEcdsa.class.getName());
+        putService("Signature", "NONEwithECDSA",
+                NoDigestSig.NoneWithEcdsa.class.getName(), NoDigestSig.NoneWithEcdsa::new);
         if (isSHA1DigestSignatureSupported()) {
-            putService("Signature", "SHA1withECDSA", EcdsaDigestSig.Sha1WithEcdsa.class.getName(),
+            putService("Signature", "SHA1withECDSA",
+                    EcdsaDigestSig.Sha1WithEcdsa.class.getName(), EcdsaDigestSig.Sha1WithEcdsa::new,
                     "OID.1.2.840.10045.4.1", "1.2.840.10045.4.1");
         } else if (getJavaRuntimeMajorVersion() < 27) {
             // Workaround: Signal the SunJSSE that EC support is available
-            putService("Signature", "SHA1withECDSA", DummySunJSSESignature.class.getName());
+            putService("Signature", "SHA1withECDSA",
+                    DummySunJSSESignature.class.getName(), DummySunJSSESignature::new);
         }
-        putService("Signature", "SHA224withECDSA", EcdsaDigestSig.Sha224WithEcdsa.class.getName(),
+        putService("Signature", "SHA224withECDSA",
+                EcdsaDigestSig.Sha224WithEcdsa.class.getName(), EcdsaDigestSig.Sha224WithEcdsa::new,
                 "OID.1.2.840.10045.4.3.1", "1.2.840.10045.4.3.1");
-        putService("Signature", "SHA256withECDSA", EcdsaDigestSig.Sha256WithEcdsa.class.getName(),
+        putService("Signature", "SHA256withECDSA",
+                EcdsaDigestSig.Sha256WithEcdsa.class.getName(), EcdsaDigestSig.Sha256WithEcdsa::new,
                 "OID.1.2.840.10045.4.3.2", "1.2.840.10045.4.3.2");
-        putService("Signature", "SHA384withECDSA", EcdsaDigestSig.Sha384WithEcdsa.class.getName(),
+        putService("Signature", "SHA384withECDSA",
+                EcdsaDigestSig.Sha384WithEcdsa.class.getName(), EcdsaDigestSig.Sha384WithEcdsa::new,
                 "OID.1.2.840.10045.4.3.3", "1.2.840.10045.4.3.3");
-        putService("Signature", "SHA512withECDSA", EcdsaDigestSig.Sha512WithEcdsa.class.getName(),
+        putService("Signature", "SHA512withECDSA",
+                EcdsaDigestSig.Sha512WithEcdsa.class.getName(), EcdsaDigestSig.Sha512WithEcdsa::new,
                 "OID.1.2.840.10045.4.3.4", "1.2.840.10045.4.3.4");
 
         if (isDSASupported()) {
-            putService("Signature", "NONEwithDSA", NoDigestSig.NoneWithDsa.class.getName(),
+            putService("Signature", "NONEwithDSA",
+                    NoDigestSig.NoneWithDsa.class.getName(), NoDigestSig.NoneWithDsa::new,
                     "RawDSA");
             if (isSHA1DigestSignatureSupported()) {
-                putService("Signature", "SHA1withDSA", DsaDigestSig.Sha1WithDsa.class.getName(),
+                putService("Signature", "SHA1withDSA",
+                        DsaDigestSig.Sha1WithDsa.class.getName(), DsaDigestSig.Sha1WithDsa::new,
                         "DSA", "DSS", "SHA/DSA", "SHA-1/DSA", "SHA1/DSA", "SHAwithDSA", "DSAWithSHA1",
                         "OID.1.2.840.10040.4.3", "1.2.840.10040.4.3",
                         "OID.1.3.14.3.2.13", "1.3.14.3.2.13",
                         "OID.1.3.14.3.2.27", "1.3.14.3.2.27");
             }
-            putService("Signature", "SHA224withDSA", DsaDigestSig.Sha224WithDsa.class.getName(),
+            putService("Signature", "SHA224withDSA",
+                    DsaDigestSig.Sha224WithDsa.class.getName(), DsaDigestSig.Sha224WithDsa::new,
                     "OID.2.16.840.1.101.3.4.3.1", "2.16.840.1.101.3.4.3.1");
-            putService("Signature", "SHA256withDSA", DsaDigestSig.Sha256WithDsa.class.getName(),
+            putService("Signature", "SHA256withDSA",
+                    DsaDigestSig.Sha256WithDsa.class.getName(), DsaDigestSig.Sha256WithDsa::new,
                     "OID.2.16.840.1.101.3.4.3.2", "2.16.840.1.101.3.4.3.2");
-            putService("Signature", "SHA384withDSA", DsaDigestSig.Sha384WithDsa.class.getName(),
+            putService("Signature", "SHA384withDSA",
+                    DsaDigestSig.Sha384WithDsa.class.getName(), DsaDigestSig.Sha384WithDsa::new,
                     "OID.2.16.840.1.101.3.4.3.3", "2.16.840.1.101.3.4.3.3");
-            putService("Signature", "SHA512withDSA", DsaDigestSig.Sha512WithDsa.class.getName(),
+            putService("Signature", "SHA512withDSA",
+                    DsaDigestSig.Sha512WithDsa.class.getName(), DsaDigestSig.Sha512WithDsa::new,
                     "OID.2.16.840.1.101.3.4.3.4", "2.16.840.1.101.3.4.3.4");
         }
     }
 
-    private void putService(String type, String alg, String className, String...aliases) {
-        putService(new Provider.Service(this, type, alg, className, Arrays.asList(aliases), null));
+    @FunctionalInterface
+    interface ServiceFactory {
+        Object create() throws NoSuchAlgorithmException, NoSuchPaddingException;
     }
 
-    private void putService(String type, String alg, String className, Map<String,String> attrs, String...aliases) {
-        // Lazy state evaluation of legacy property put() calls cause
-        // previously processed putService() registrations of prngAlgos to be forgotten.
-        // Workaround: Use legacy properties put() calls to register SecureRandom algorithms.
-        if (type.equals("SecureRandom")) {
-            putLegacy(type, alg, className, Arrays.asList(aliases), attrs);
-        } else {
-            putService(new Provider.Service(this, type, alg, className, Arrays.asList(aliases), attrs));
-        }
+    private void putService(String type, String alg, String className, ServiceFactory factory, String...aliases) {
+        putService(type, alg, className, factory, null, aliases);
     }
 
-    private void putLegacy(String type, String alg, String className, List<String> aliases, Map<String,String> attrs)
-    {
-        put(type + "." + alg, className);
-        aliases.forEach(alias ->  put("Alg.Alias." + type + "." + alias, alg));
-        attrs.forEach((key, value) -> put(type + "." + alg + " " + key, value));
+    private void putService(String type, String alg, String className, ServiceFactory factory, Map<String,String> attrs, String...aliases) {
+        // Use an anonymous inner class extension of Provider.Service that overrides newInstance
+        // because the java.base module cannot create instances of classes in the com.oracle.jipher module
+        putService(new Provider.Service(this, type, alg, className, Arrays.asList(aliases), attrs) {
+            @Override
+            public Object newInstance(Object constructorParameter) throws NoSuchAlgorithmException {
+                if (constructorParameter != null) {
+                    throw new InvalidParameterException("constructorParameter not used with " + getType() + " engines");
+                }
+                try {
+                    return factory.create();
+                } catch (NoSuchAlgorithmException e) {
+                    throw e;
+                }  catch (Exception e) {
+                    throw new NoSuchAlgorithmException("Error constructing implementation (algorithm: "
+                            + getAlgorithm() + ", provider: " + PROVIDER_NAME
+                            + ", class: " + getClassName() + ")", e);
+                }
+            }
+        });
+    }
+
+    @FunctionalInterface
+    interface ServiceFactoryParam<T> {
+        Object create(T constructorParameter) throws InvalidAlgorithmParameterException;
+    }
+
+    private void putService(String type, String alg, String className, ServiceFactoryParam<KDFParameters> factory, String...aliases) {
+        putService(type, alg, className, KDFParameters.class, factory, aliases);
+    }
+
+    private <T> void putService(String type, String alg, String className, Class<T> paramType, ServiceFactoryParam<T> factory, String...aliases) {
+        // Use an anonymous inner class extension of Provider.Service that overrides newInstance
+        // because the java.base module cannot create instances of classes in the com.oracle.jipher module
+        putService(new Provider.Service(this, type, alg, className, Arrays.asList(aliases), null) {
+            @Override
+            public Object newInstance(Object constructorParameter) throws NoSuchAlgorithmException {
+                if (constructorParameter != null && !paramType.isInstance(constructorParameter)) {
+                    throw new InvalidParameterException("constructorParameter is unsupported type " + constructorParameter.getClass());
+                }
+                try {
+                    return factory.create(paramType.cast(constructorParameter));
+                } catch (Exception e) {
+                    throw new NoSuchAlgorithmException("Error constructing implementation (algorithm: "
+                            + getAlgorithm() + ", provider: " + PROVIDER_NAME
+                            + ", class: " + getClassName() + ")", e);
+                }
+            }
+        });
     }
 
     @Override

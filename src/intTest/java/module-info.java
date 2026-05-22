@@ -39,8 +39,6 @@
  */
 
 open module com.oracle.jiphertest.integration {
-    requires com.oracle.jipher;
-
     requires com.oracle.jiphertest.other;
 
     requires org.junit.jupiter.api;

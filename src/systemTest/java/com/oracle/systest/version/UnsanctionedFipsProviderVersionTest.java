@@ -40,14 +40,14 @@
 
 package com.oracle.systest.version;
 
+import java.security.Provider;
 import java.security.ProviderException;
+import java.util.ServiceLoader;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import com.oracle.jipher.provider.JipherJCE;
 
 public class UnsanctionedFipsProviderVersionTest {
 
@@ -62,23 +62,17 @@ public class UnsanctionedFipsProviderVersionTest {
     }
 
     @Test
-    public void isAvailable()  {
-        Assertions.assertFalse(JipherJCE.isAvailable());
-    }
-
-    @Test
-    public void loadingException()  {
-        Throwable t = JipherJCE.loadingException();
-        validateCause(t);
-    }
-
-    @Test
-    public void loadJipher()  {
+    public void loadJipher() {
         try {
-            new JipherJCE();
-            Assertions.fail("Should throw ProviderException");
-        } catch (ProviderException e) {
-            validateCause(e);
+            ServiceLoader.load(Provider.class)
+                    .stream()
+                    .map(ServiceLoader.Provider::get)
+                    .filter(provider -> provider.getName().equals("JipherJCE"))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("JipherJCE provider not found"));
+            Assertions.fail("Should throw ServiceConfigurationError caused by ProviderException");
+        } catch (Throwable t) {
+            validateCause(t);
         }
     }
 

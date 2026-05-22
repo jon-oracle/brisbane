@@ -44,15 +44,9 @@ module com.oracle.jiphertest.other {
     exports com.oracle.jiphertest.testdata;
     exports com.oracle.jiphertest.util;
 
-    // The com.oracle.jiphertest.util.ProviderUtil class creates an instance of com.oracle.jipher.provider.JipherJCE to
-    // dynamically register it as a java security provider.
-    // The com.oracle.jiphertest.util.FipsProviderInfoUtil class creates an instance of
-    // com.oracle.jipher.provider.JipherJCE from which it can query information about the OpenSSL FIPS provider version.
-    // The com.oracle.systest.classloader.CipherTest system test uses com.oracle.jiphertest.testdata to load test data,
-    // but it does NOT list jipher-jce on the classpath because it uses a URLClassLoader to load the jipher-jce JAR.
-    // Consequently, the following 'requires' statement is 'static' to indicate that the dependency is required
-    // at compile time but is optional at run time.
-    requires static com.oracle.jipher;
+    // The com.oracle.jiphertest.util.ProviderUtil class creates an instance of the JiperJCE provider via the
+    // service loader to dynamically register it as a java security provider.
+    uses java.security.Provider;
 
     // testdata uses gson
     requires com.google.gson;

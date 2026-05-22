@@ -46,8 +46,6 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.oracle.jipher.provider.JipherJCE;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -60,7 +58,8 @@ public class JipherModuleTest {
         // This test is only valid if jipher is listed on the module path
         Assume.assumeNotNull(System.getProperty("jdk.module.path"));
         Assume.assumeTrue(System.getProperty("jdk.module.path").contains("jipher-jce"));
-        MODULE_DESCRIPTOR = JipherJCE.class.getModule().getDescriptor();
+        Module module = ModuleLayer.boot().findModule("com.oracle.jipher").orElseThrow();
+        MODULE_DESCRIPTOR = module.getDescriptor();
     }
 
     @Test

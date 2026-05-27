@@ -141,7 +141,9 @@ public abstract class KeyAgree extends KeyAgreementSpi {
      * @param secret the secret key material to use
      * @return a {@link SecretKey} suitable for use by the JSSE
      */
-    abstract SecretKey createGenericSecretKey(byte[] secret);
+    SecretKey createGenericSecretKey(byte[] secret) {
+        return new SecretKeySpec(secret, "Generic");
+    }
 
     @Override
     protected void engineInit(Key key, AlgorithmParameterSpec algorithmParameterSpec, SecureRandom secureRandom)
@@ -317,11 +319,6 @@ public abstract class KeyAgree extends KeyAgreementSpi {
         SecretKey createTlsPremasterSecretKey(byte[] secret) {
             return new SecretKeySpec(secret, "TlsPremasterSecret");
         }
-
-        @Override
-        SecretKey createGenericSecretKey(byte[] secret) {
-            return new SecretKeySpec(secret, "Generic");
-        }
     }
 
     /**
@@ -368,11 +365,6 @@ public abstract class KeyAgree extends KeyAgreementSpi {
             } else {
                 return new SecretKeySpec(secret, "TlsPremasterSecret");
             }
-        }
-
-        @Override
-        SecretKey createGenericSecretKey(byte[] secret) {
-            return new SecretKeySpec(secret, "Generic");
         }
 
         boolean paramsEquals(DHParameterSpec spec1, DHParameterSpec spec2) {

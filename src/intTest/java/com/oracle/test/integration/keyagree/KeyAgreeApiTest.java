@@ -150,6 +150,24 @@ public class KeyAgreeApiTest {
     }
 
     @Test
+    public void generateSecretGeneric() throws Exception {
+        agree.init(priv);
+        agree.doPhase(pub, true);
+        assertArrayEquals(tv.getSecret(), agree.generateSecret("Generic").getEncoded());
+    }
+
+    @Test
+    public void generateSecretTlsPremasterSecret() throws Exception {
+        agree.init(priv);
+        agree.doPhase(pub, true);
+        // Trim leading zeroes if algorithm is DH
+        byte[] expectedSecret = (this.alg.equals("DH")) ?
+                TestUtil.trimLeadingZeros(tv.getSecret()) :
+                tv.getSecret();
+        assertArrayEquals(expectedSecret, agree.generateSecret("TlsPremasterSecret").getEncoded());
+    }
+
+    @Test
     public void generateSecretBuffer() throws Exception {
         agree.init(priv, null, null);
         agree.doPhase(pub, true);
@@ -165,12 +183,14 @@ public class KeyAgreeApiTest {
         } else if (algorithm.equalsIgnoreCase("DESede")) {
             SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance(algorithm, "SunJCE");
             return secretKeyFactory.generateSecret(new DESedeKeySpec(keyMaterial));
-        } else if  (algorithm.equalsIgnoreCase("TlsPremasterSecret")) {
+        } else if (algorithm.equalsIgnoreCase("TlsPremasterSecret")) {
             if (this.alg.equals("DH")) {
                 return new SecretKeySpec(TestUtil.trimLeadingZeros(keyMaterial), algorithm);
             } else {
                 return new SecretKeySpec(keyMaterial, algorithm);
             }
+        } else if (algorithm.equalsIgnoreCase("Generic")) {
+            return new SecretKeySpec(keyMaterial, algorithm);
         } else {
             throw new NoSuchAlgorithmException("Unsupported secret key algorithm: " + alg);
         }
@@ -198,8 +218,13 @@ public class KeyAgreeApiTest {
     }
 
     @Test
-    public void generateTlsPremasterSecrettKey() throws Exception {
+    public void generateTlsPremasterSecretKey() throws Exception {
         generateSecretKey("TlsPremasterSecret");
+    }
+
+    @Test
+    public void generateGenericKey() throws Exception {
+        generateSecretKey("Generic");
     }
 
     // Tests that once init has been called the keyagree object

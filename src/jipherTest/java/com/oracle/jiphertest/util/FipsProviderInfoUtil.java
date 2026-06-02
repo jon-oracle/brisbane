@@ -40,8 +40,6 @@
 
 package com.oracle.jiphertest.util;
 
-import com.oracle.jipher.provider.JipherJCE;
-
 import static org.junit.Assert.assertEquals;
 
 public class FipsProviderInfoUtil {
@@ -57,9 +55,10 @@ public class FipsProviderInfoUtil {
     private static final boolean FIPS_186_4_TYPE_DOMAIN_PARAMETERS_SUPPORTED;
     private static final int     KDF_MIN_PWD_LEN;
 
+
     static {
         // Determine the OpenSSL FIPS provider name and version:
-        String jipherInfo = new JipherJCE().getInfo();
+        String jipherInfo = ProviderUtil.get().getInfo();
         String openSSLInfo = jipherInfo.substring(jipherInfo.indexOf('[') + 1, jipherInfo.indexOf(']'));
         String fipsProvider = openSSLInfo.split(" with ")[1];
         NAME = fipsProvider.split(" version ")[0];

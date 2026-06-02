@@ -1,4 +1,4 @@
-security.provider.1=com.oracle.jipher.provider.JipherJCE
+security.provider.1=JipherJCE
 security.provider.2=SUN
 security.provider.3=SunRsaSign
 security.provider.4=SunEC

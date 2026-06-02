@@ -48,7 +48,7 @@ import java.security.Provider;
 
 import org.junit.Test;
 
-import com.oracle.jipher.provider.JipherJCE;
+import com.oracle.jiphertest.util.ProviderUtil;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -57,25 +57,20 @@ import static org.junit.Assert.assertNotNull;
 public class JipherJCEProviderTest {
 
     @Test
-    public void main() throws Exception {
-        JipherJCE.main(null);
-    }
-
-    @Test
     public void getInfo() throws Exception {
-        JipherJCE prov = new JipherJCE();
-        assertNotNull(prov.getInfo());
+        Provider provider = ProviderUtil.get();
+        assertNotNull(provider.getInfo());
     }
 
     @Test
     public void getVersion() throws Exception {
-        JipherJCE prov = new JipherJCE();
-        assertFalse(prov.getVersionStr().isEmpty());
+        Provider provider = ProviderUtil.get();
+        assertFalse(provider.getVersionStr().isEmpty());
     }
 
     @Test
     public void serializeDeserialize() throws Exception {
-        Provider provider = new JipherJCE();
+        Provider provider = ProviderUtil.get();
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);

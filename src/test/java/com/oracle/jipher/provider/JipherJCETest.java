@@ -334,12 +334,6 @@ public class JipherJCETest {
     }
 
     @Test
-    public void isAvailable() {
-        assertTrue(JipherJCE.isAvailable());
-        assertNull(JipherJCE.loadingException());
-    }
-
-    @Test
     public void serviceAlgorithmRegistrationWithFipsProviderCapabilities()
     {
         for (int index = 0; index < (1 << 3); index++) {

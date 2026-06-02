@@ -52,13 +52,12 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
 import java.util.Arrays;
+import java.util.ServiceLoader;
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
 import javax.crypto.SecretKeyFactory;
-
-import com.oracle.jipher.provider.JipherJCE;
 
 /**
  * This class provides a single place to access a Provider to use for testing.
@@ -85,16 +84,26 @@ public class ProviderUtil {
             throw new Error("Testing property 'provider.test.mode' contained unrecognised value, "
                     + "expected one of " + Arrays.asList(ProvUsage.values()));
         }
+        Provider provider = getJipherInstanceViaServiceLoader();
         if (PROV_USAGE == ProvUsage.DYNAMIC_FIRST) {
-            Security.insertProviderAt(new JipherJCE(), 1);
+            Security.insertProviderAt(provider, 1);
         } else if (PROV_USAGE == ProvUsage.DYNAMIC_STRING) {
-            Security.addProvider(new JipherJCE());
+            Security.addProvider(provider);
         } else if (PROV_USAGE == ProvUsage.INSTANCE) {
             // Its important only to create the provider instance provider when test configuration
             // specifies because the provider tests try to test first usage of the provider by
             // the JCE framework.
-            instance = new JipherJCE();
+            instance = provider;
         }
+    }
+
+    static Provider getJipherInstanceViaServiceLoader() {
+        return ServiceLoader.load(Provider.class)
+                .stream()
+                .map(ServiceLoader.Provider::get)
+                .filter(provider -> provider.getName().equals("JipherJCE"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("JipherJCE provider not found"));
     }
 
     public static Provider get() {

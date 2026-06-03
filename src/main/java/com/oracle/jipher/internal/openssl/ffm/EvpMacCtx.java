@@ -76,6 +76,8 @@ import static java.lang.Math.toIntExact;
 
 final class EvpMacCtx extends PoolableObjectBase<EvpMacCtx> implements EVP_MAC_CTX {
 
+    static final int FIPS_MIN_SECURITY_STRENGTH_BITS = 112;
+
     static final ObjectPool<EvpMacCtx> HMAC_MAC_CTX_OBJECT_POOL = new ObjectPool<>();
 
     /*
@@ -193,7 +195,7 @@ final class EvpMacCtx extends PoolableObjectBase<EvpMacCtx> implements EVP_MAC_C
         if (this.initialized) {
             // Init with an arbitrary key of minimum allowed strength.
             try {
-                this.init(new byte[112 * 8], OsslParamBufferImpl.EMPTY_PARAM_BUFFER);
+                this.init(new byte[FIPS_MIN_SECURITY_STRENGTH_BITS / 8], OsslParamBufferImpl.EMPTY_PARAM_BUFFER);
             } catch (Exception e) {
                 // Init failed. Don't release this EvpMacCtx to the hmac pool.
                 return;
@@ -275,17 +277,22 @@ final class EvpMacCtx extends PoolableObjectBase<EvpMacCtx> implements EVP_MAC_C
     public void init(byte[] key, OsslParamBuffer paramBuffer) {
         try (Arena arena = Arena.ofConfined()) {
             SegmentAllocator allocator = key == null || key.length <= BUFFER_SIZE ? this.keyBufPA : arena;
-            MemorySegment keySeg = FfmOpenSsl.allocateFromNullable(key, allocator);
             long keyLen = key != null ? key.length : 0L;
             this.initialized = false;
-            withDataParamsSeg(paramBuffer, (paramsSeg) -> {
-                try {
-                    EVP_MAC_INIT_FUNC.invokeExact(this.evpMacCtx, keySeg, keyLen, paramsSeg);
-                } catch (Throwable t) {
-                    throw mapException(t);
-                }
-            });
-            this.initialized = true;
+            MemorySegment keySeg = FfmOpenSsl.allocateFromNullable(key, allocator);
+            try {
+                withDataParamsSeg(paramBuffer, (paramsSeg) -> {
+                    try {
+                        EVP_MAC_INIT_FUNC.invokeExact(this.evpMacCtx, keySeg, keyLen, paramsSeg);
+                    } catch (Throwable t) {
+                        throw mapException(t);
+                    }
+                });
+                this.initialized = true;
+            } finally {
+                // Clear the off-heap copy of the key data.
+                keySeg.fill((byte)0);
+            }
         }
     }
 

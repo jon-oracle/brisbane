@@ -40,8 +40,6 @@
 
 package com.oracle.jipher.internal.openssl;
 
-import java.security.ProviderException;
-
 /**
  * Random byte generator.
  */
@@ -49,13 +47,13 @@ public final class Rand {
 
     static private final int STRENGTH = 256;
 
-    public static byte[] generate(int numBytes) throws ProviderException {
+    public static byte[] generate(int numBytes) {
         byte[] bytes = new byte[numBytes];
         generate(bytes);
         return bytes;
     }
 
-    public static byte[] generatePrivate(int numBytes) throws ProviderException {
+    public static byte[] generatePrivate(int numBytes) {
         byte[] bytes = new byte[numBytes];
         generatePrivate(bytes);
         return bytes;
@@ -64,18 +62,16 @@ public final class Rand {
     /**
      * Generate random bytes.
      * @param bytes the byte array to fill with random bytes
-     * @throws ProviderException if the bytes could not be generated
      */
-    public static void generate(byte[] bytes) throws ProviderException {
+    public static void generate(byte[] bytes) {
         LibCtx.randBytes(bytes, STRENGTH);
     }
 
     /**
      * Generate random bytes. Use the random designated for long-lived secrets.
      * @param bytes the byte array to fill with random bytes
-     * @throws ProviderException if the bytes could not be generated
      */
-    public static void generatePrivate(byte[] bytes) throws ProviderException {
+    public static void generatePrivate(byte[] bytes) {
         LibCtx.randPrivBytes(bytes, STRENGTH);
     }
 }

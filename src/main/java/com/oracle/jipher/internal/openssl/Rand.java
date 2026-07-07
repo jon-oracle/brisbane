@@ -55,6 +55,12 @@ public final class Rand {
         return bytes;
     }
 
+    public static byte[] generatePrivate(int numBytes) throws ProviderException {
+        byte[] bytes = new byte[numBytes];
+        generatePrivate(bytes);
+        return bytes;
+    }
+
     /**
      * Generate random bytes.
      * @param bytes the byte array to fill with random bytes
@@ -62,6 +68,15 @@ public final class Rand {
      */
     public static void generate(byte[] bytes) throws ProviderException {
         LibCtx.randBytes(bytes, STRENGTH);
+    }
+
+    /**
+     * Generate random bytes. Use the random designated for long-lived secrets.
+     * @param bytes the byte array to fill with random bytes
+     * @throws ProviderException if the bytes could not be generated
+     */
+    public static void generatePrivate(byte[] bytes) throws ProviderException {
+        LibCtx.randPrivBytes(bytes, STRENGTH);
     }
 
     public void nextBytes(byte[] bytes) {

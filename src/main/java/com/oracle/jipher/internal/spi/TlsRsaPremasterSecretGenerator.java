@@ -106,7 +106,7 @@ public final class TlsRsaPremasterSecretGenerator extends KeyGeneratorSpi {
         byte[] premaster = this.paramSpec.getEncodedSecret();
         try {
             if (premaster == null) {
-                premaster = Rand.generate(PREMASTER_SECRET_KEY_LEN);
+                premaster = Rand.generatePrivate(PREMASTER_SECRET_KEY_LEN);
             }
             premaster[0] = (byte) this.paramSpec.getMajorVersion();
             premaster[1] = (byte) this.paramSpec.getMinorVersion();

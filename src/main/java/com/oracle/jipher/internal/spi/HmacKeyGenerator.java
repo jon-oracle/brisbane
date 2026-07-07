@@ -86,7 +86,7 @@ public abstract class HmacKeyGenerator extends KeyGeneratorSpi {
 
     @Override
     protected SecretKey engineGenerateKey() {
-        byte[] bytes = Rand.generate(this.keyByteLen == -1 ? this.defaultKeyLenBytes : this.keyByteLen);
+        byte[] bytes = Rand.generatePrivate(this.keyByteLen == -1 ? this.defaultKeyLenBytes : this.keyByteLen);
         try {
             return new SecretKeySpec(bytes, this.algName);
         } finally {

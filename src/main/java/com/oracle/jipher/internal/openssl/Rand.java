@@ -78,8 +78,4 @@ public final class Rand {
     public static void generatePrivate(byte[] bytes) throws ProviderException {
         LibCtx.randPrivBytes(bytes, STRENGTH);
     }
-
-    public void nextBytes(byte[] bytes) {
-        generate(bytes);
-    }
 }

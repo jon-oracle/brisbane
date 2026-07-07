@@ -52,11 +52,6 @@ public final class Drbg extends SecureRandomSpi {
     @Serial
     private static final long serialVersionUID = 5952625728129925027L;
 
-    private final transient Rand rand;
-    public Drbg() {
-        this.rand = new Rand();
-    }
-
     @Override
     protected void engineSetSeed(byte[] seed) {
         // Do nothing
@@ -68,7 +63,7 @@ public final class Drbg extends SecureRandomSpi {
             throw new IllegalArgumentException("numBytes cannot be negative");
         }
         byte[] bytes = new byte[numBytes];
-        rand.nextBytes(bytes);
+        Rand.generate(bytes);
         return bytes;
     }
 
@@ -77,14 +72,6 @@ public final class Drbg extends SecureRandomSpi {
         if (bytes == null) {
             throw new NullPointerException("bytes cannot be null");
         }
-        this.rand.nextBytes(bytes);
-    }
-
-    /*
-     * Return a new instance of Drbg on deserialization.
-     */
-    @Serial
-    private Object readResolve() {
-        return new Drbg();
+        Rand.generate(bytes);
     }
 }

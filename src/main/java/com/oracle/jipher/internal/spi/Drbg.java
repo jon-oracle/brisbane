@@ -62,9 +62,7 @@ public final class Drbg extends SecureRandomSpi {
         if (numBytes < 0) {
             throw new IllegalArgumentException("numBytes cannot be negative");
         }
-        byte[] bytes = new byte[numBytes];
-        Rand.generate(bytes);
-        return bytes;
+        return Rand.generate(numBytes);
     }
 
     @Override

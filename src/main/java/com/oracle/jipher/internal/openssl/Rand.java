@@ -47,6 +47,9 @@ public final class Rand {
 
     static private final int STRENGTH = 256;
 
+    // Prevent instantiation
+    private Rand() {}
+    
     public static byte[] generate(int numBytes) {
         byte[] bytes = new byte[numBytes];
         generate(bytes);

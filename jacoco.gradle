@@ -96,7 +96,7 @@ jacocoTestCoverageVerification {
 
     mustRunAfter jacocoTestReport
     violationRules {
-        failOnViolation project.hasProperty('enforceCoverage') && project.property('enforceCoverage').toBoolean()
+        failOnViolation = project.findProperty('enforceCoverage')?.toString()?.toBoolean() ?: false
         rule {
             element = 'PACKAGE'
             includes = ['com.oracle.*']

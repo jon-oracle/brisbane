@@ -117,7 +117,7 @@ public class AesKeyGenerator extends KeyGeneratorSpi {
      */
     @Override
     protected SecretKey engineGenerateKey() {
-        byte[] bytes = Rand.generate(this.keySize);
+        byte[] bytes = Rand.generatePrivate(this.keySize);
         try {
             return new SecretKeySpec(bytes, "AES");
         } finally {

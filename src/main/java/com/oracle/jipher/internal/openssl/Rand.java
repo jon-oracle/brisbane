@@ -49,7 +49,7 @@ public final class Rand {
 
     // Prevent instantiation
     private Rand() {}
-    
+
     public static byte[] generate(int numBytes) {
         byte[] bytes = new byte[numBytes];
         generate(bytes);

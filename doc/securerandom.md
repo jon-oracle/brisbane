@@ -21,12 +21,18 @@ For any Java Cryptography API calls to the JipherJCE provider, listed below, the
 For example, this code does **not** make Jipher use `testRandom`:
 
 ```java
-Signature signature = Signature.getInstance("SHA256withRSA/PSS", "JipherJCE");
+Signature signature = Signature.getInstance("RSASSA-PSS", "JipherJCE");
 ...
 signature.initSign(privateKey, testRandom);
 ```
 
-`testRandom` is ignored; any random bytes required by the RSA signing operation come from OpenSSL. The same applies whether `testRandom` is a Jipher `SecureRandom`, a standard-JDK implementation, or a deterministic test double. Do not rely on this for application testing.
+`testRandom` is ignored; any random bytes required by the RSA signing operation come from OpenSSL. The same applies whether `testRandom` is a Jipher `SecureRandom`, a standard-JDK implementation, or a deterministic test double. Do not rely on using a SecureRandom that a produces a repeatable deterministic series of bits for application testing.
+
+Java cryptography APIs provided by Jipher which do not take a `SecureRandom` but use one internally to provide randomness also deviate from the defined JDK behaviour, e.g. for `Cipher` [init(int opmode, Key key)](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/javax/crypto/Cipher.html#init(int,java.security.Key)):
+
+>If this cipher (including its feedback or padding scheme) requires any random bytes (e.g., for parameter generation), it will get them using the SecureRandom implementation of the highest-priority installed provider as the source of randomness. (If none of the installed providers supply an implementation of SecureRandom, a system-provided source of randomness will be used.)
+
+The `Cipher` object will always obtain random bits from Jipher's internal DRBG provided by OpenSSL.
 
 ## Motivation
 
@@ -65,7 +71,7 @@ OpenSSL internally manages a DRBG hierarchy used by operations requiring a sourc
 * HASH-DRBG
 * HMAC-DRBG
 
-OpenSSL uses a per-thread DRBG seeded from a global DRBG. Entropy for the global DRBG is obtained from the operating system and automatically reseeds both levels according to configured call-count and time intervals. These are OpenSSL configuration, not per-instance Java `SecureRandom` settings.
+OpenSSL uses a per-thread DRBG seeded from a global DRBG. Entropy for the global DRBG is obtained from the operating system and both global and per-thread DRBGs are automatically reseeded according to configured call-count and time intervals. These are OpenSSL configuration, not per-instance Java `SecureRandom` settings.
 
 More details can be found in the [OpenSSL RAND man page](https://docs.openssl.org/master/man7/RAND/) or [FIPS provider documentation](https://docs.openssl.org/3.5/man7/OSSL_PROVIDER-FIPS/#random-number-generation)
 
@@ -86,5 +92,5 @@ Calling `SecureRandom.getInstance(algorithm, params)` without naming Jipher may 
 ## Development and test guidance
 
 - Use Jipher `SecureRandom` when an application directly needs random bytes produced by Jipher's OpenSSL-backed random subsystem.
-- It is preferrable to pass `null` as the `SecureRandom` required by a Java API when initializing a Jipher service, for consistency.
+- It is preferable to use JCA initialization APIs which do not specify a `SecureRandom` when possible, rather than passing `null` or a subsequently ignored object.
 - Do not use a deterministic `SecureRandom` injection to make a Jipher operation repeatable. Assert externally observable properties instead, or use a dedicated Jipher/OpenSSL test facility if one is provided.

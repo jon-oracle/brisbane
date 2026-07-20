@@ -28,11 +28,11 @@ signature.initSign(privateKey, testRandom);
 
 `testRandom` is ignored; any random bytes required by the RSA signing operation come from OpenSSL. The same applies whether `testRandom` is a Jipher `SecureRandom`, a standard-JDK implementation, or a deterministic test double. Do not rely on using a SecureRandom that a produces a repeatable deterministic series of bits for application testing.
 
-Java cryptography APIs provided by Jipher which do not take a `SecureRandom` but use one internally to provide randomness also deviate from the defined JDK behaviour, e.g. for `Cipher` [init(int opmode, Key key)](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/javax/crypto/Cipher.html#init(int,java.security.Key)):
+The Java Cryptography API specifies that API calls which do not accept a `SecureRandom` argument, but nonetheless require a source of random bytes, obtain randomness as follows:
 
->If this cipher (including its feedback or padding scheme) requires any random bytes (e.g., for parameter generation), it will get them using the SecureRandom implementation of the highest-priority installed provider as the source of randomness. (If none of the installed providers supply an implementation of SecureRandom, a system-provided source of randomness will be used.)
+>using the SecureRandom implementation of the highest-priority installed provider as the source of randomness. (If none of the installed providers supplies an implementation of SecureRandom, a system-provided source of randomness will be used.)
 
-The `Cipher` object will always obtain random bits from Jipher's internal DRBG provided by OpenSSL.
+The JipherJCE provider deviates from this specified behavior. When an API call implemented by JipherJCE requires random bytes and no `SecureRandom` instance is supplied, it uses an internal OpenSSL DRBG rather than a `SecureRandom` provided by the highest-priority installed provider.
 
 ## Motivation
 

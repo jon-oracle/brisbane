@@ -129,13 +129,14 @@ final class OsslParam {
             } else {
                 size = switch (param.dataType) {
                     case UTF8_PTR, OCTET_PTR -> C_POINTER.byteSize() + C_POINTER.byteAlignment() - 1;
-                    default -> param.dataSize + Long.BYTES - 1;
+                    default -> Math.addExact(param.dataSize, Long.BYTES - 1);
                 };
             }
         }
         return size;
     }
 
+    // This should only be called when param.data != null.
     static void checkDataSize(OSSL_PARAM param) {
         if (param.dataSize != param.data.length) {
             throw new IllegalArgumentException("OSSL_PARAM dataSize (" + param.dataSize + ") is not equal to data buffer size (" + param.data.length + ")");

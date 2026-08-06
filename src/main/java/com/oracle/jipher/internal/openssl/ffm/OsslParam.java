@@ -94,9 +94,7 @@ final class OsslParam {
     static void store(OSSL_PARAM param, MemorySegment paramSeg, long offset, SegmentAllocator allocator) {
         MemorySegment dataSeg;
         if (param.data != null) {
-            if (param.dataSize != param.data.length) {
-                throw new IllegalArgumentException("OSSL_PARAM dataSize (" + param.dataSize + ") is not equal to data buffer size (" + param.data.length + ")");
-            }
+            checkDataSize(param);
             dataSeg = switch (param.dataType) {
                 case NONE, UTF8_PTR, OCTET_PTR -> throw new AssertionError();
                 case INTEGER, UNSIGNED_INTEGER, REAL -> storeNumber(param.data, allocator);
@@ -121,9 +119,7 @@ final class OsslParam {
         long size = 0L;
         if (param.key != null) {
             if (param.data != null) {
-                if (param.dataSize != param.data.length) {
-                    throw new IllegalArgumentException("OSSL_PARAM dataSize (" + param.dataSize + ") is not equal to data buffer size (" + param.data.length + ")");
-                }
+                checkDataSize(param);
                 size = switch (param.dataType) {
                     case INTEGER, UNSIGNED_INTEGER, REAL -> param.dataSize + Long.BYTES - 1L;
                     case UTF8_STRING -> param.dataSize + 1L;
@@ -138,6 +134,12 @@ final class OsslParam {
             }
         }
         return size;
+    }
+
+    static void checkDataSize(OSSL_PARAM param) {
+        if (param.dataSize != param.data.length) {
+            throw new IllegalArgumentException("OSSL_PARAM dataSize (" + param.dataSize + ") is not equal to data buffer size (" + param.data.length + ")");
+        }
     }
 
     static MemorySegment storeNumber(byte[] data, SegmentAllocator allocator) {

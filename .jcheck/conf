@@ -48,8 +48,7 @@ error=author,committer,reviewers,merge,issues,executable,symlink,message,whitesp
 warning=issuestitle,binary
 
 [repository]
-; if promotion will tag... uncomment and update
-; tags= <regex of tag format>
+tags=(?:[1-9]\d*(?:\.\d+)*(?:\+\d+|-ga))
 branches=.*
 
 [census]

@@ -48,7 +48,7 @@ error=author,committer,reviewers,merge,issues,executable,symlink,message,whitesp
 warning=issuestitle,binary
 
 [repository]
-tags=(?:\\d{2}(?:\\.\\d+)+\\+\\d{1,2}|\\d{2}(?:\\.\\d+)?-ga)
+tags=(?:[1-9]\d*(?:\.\d+)*(?:\+\d+|-ga))
 branches=.*
 
 [census]

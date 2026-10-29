@@ -103,7 +103,7 @@ OpenSSL is **NOT** required to build Jipher. It is however required by Jipher at
 At runtime Jipher loads the [OpenSSL](https://openssl-library.org/) cryptographic library, FIPS provider and
 optionally (to access the FIPS module MAC) the OpenSSL configuration file from the filesystem.
 
-Brisbane is compatible with any version of OpenSSL in which the major version is 3.
+Brisbane is compatible with any version of OpenSSL in which the major version is 3 or above.
 The version of the OpenSSL cryptographic library does not need to match
 the version of the OpenSSL FIPS provider.  For example, you could use
 version 3.6.2 of the OpenSSL cryptographic library with version 3.5.4 of the OpenSSL FIPS provider.

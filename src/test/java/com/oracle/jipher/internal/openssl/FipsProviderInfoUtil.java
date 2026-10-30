@@ -69,7 +69,7 @@ public class FipsProviderInfoUtil {
                 majorVersion = Integer.parseInt(versionComponents[0]);
                 minorVersion = Integer.parseInt(versionComponents[1]);
                 // FIPS certified support for PQC requires OpenSSL 3.5 or later.
-                isPQCSupported = (majorVersion == 4 || (majorVersion == 3 && minorVersion >= 5));
+                isPQCSupported = (majorVersion >= 4 || (majorVersion == 3 && minorVersion >= 5));
             } catch (NumberFormatException e) {
                 isPQCSupported = false;
             }

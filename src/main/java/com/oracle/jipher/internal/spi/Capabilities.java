@@ -81,7 +81,7 @@ public class Capabilities {
                     DEBUG.println("FIPS Provider major version " + majorVersion);
                     DEBUG.println("FIPS Provider minor version " + minorVersion);
                     // FIPS certified support for PQC requires OpenSSL 3.5 or later.
-                    isPQCSupported = (majorVersion == 4 || (majorVersion == 3 && minorVersion >= 5));
+                    isPQCSupported = (majorVersion >= 4 || (majorVersion == 3 && minorVersion >= 5));
                 } catch (NumberFormatException e) {
                     // Ignore
                 }
